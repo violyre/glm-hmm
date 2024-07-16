@@ -18,6 +18,8 @@ def load_data(animal_file):
 def fit_glm(inputs, datas, M, C):
     new_glm = glm(M, C)
     new_glm.fit_glm(datas, inputs, masks=None, tags=None)
+    # print(f'Wk: {new_glm.Wk}') # my addition
+    # print(f'params: {new_glm.params}') # my addition
     # Get loglikelihood of training data:
     loglikelihood_train = new_glm.log_marginal(datas, inputs, None, None)
     recovered_weights = new_glm.Wk
@@ -57,6 +59,8 @@ def plot_input_vectors(Ws,
     K = Ws.shape[0]
     K_prime = Ws.shape[1]
     M = Ws.shape[2] - 1
+    print(f'K: {K}, K_prime: {K_prime}, M: {M}') # my addition
+    print(f'Ws: {Ws}, shape {Ws.shape}') # my addition
     fig = plt.figure(figsize=(7, 9), dpi=80, facecolor='w', edgecolor='k')
     plt.subplots_adjust(left=0.15,
                         bottom=0.27,

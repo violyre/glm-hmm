@@ -7,10 +7,11 @@ import numpy as np
 import pandas as pd
 import ssm
 
-sys.path.insert(0, '../fit_glm/')
-sys.path.insert(0, '../fit_lapse_model/')
+# sys.path.insert(0, '../fit_glm/')
+# sys.path.insert(0, '../fit_lapse_model/')
+sys.path.insert(0, 'C:/Users/violy/Documents/~PhD/Lab/SC/GLM-HMM Ashwood/glm-hmm/2_fit_models/fit_glm/')
 from GLM import glm
-from LapseModel import lapse_model
+# from LapseModel import lapse_model
 
 
 def load_data(animal_file):
