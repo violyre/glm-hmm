@@ -24,69 +24,72 @@ if __name__ == '__main__':
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    # Fit GLM to all data
-    subj_file = data_dir + 'all_subj_concat.npz'
-    # input, y = load_data(subj_file)
-    container = np.load(subj_file, allow_pickle=True)
-    data = [container[key] for key in container]
-    input = data[0]
-    y = data[1]
+    for group in range(1,4): # iterate through groups 1-3 
+        group_str = f'{group:02d}'
 
-    print(input)
-    # session_fold_lookup_table = load_session_fold_lookup(
-    #     data_dir + 'all_animals_concat_session_fold_lookup.npz')
+        # Fit GLM to all data
+        subj_file = data_dir + group_str + '_all_subj_concat.npz'
+        # input, y = load_data(subj_file)
+        container = np.load(subj_file, allow_pickle=True)
+        data = [container[key] for key in container]
+        input = data[0]
+        y = data[1]
 
-    for fold in range(1): #range(num_folds):
-        # Subset to relevant covariates for covar set of interest:
-        labels_for_plot = ['stim_probe X', 'stim_probe Y', 'stim_probe X*Y', 'stim_1 X', 'stim_1 Y', 'stim_1 X*Y', 'stim_2 X', 'stim_2 Y', 'stim_2 X*Y', 'stim_3 X', 'stim_3 Y', 'stim_3 X*Y', 'prev_resp', 'prev_acc', 'bias']
-        y = y.astype('int')
-        print(np.unique(y))
-        figure_directory = results_dir + "GLM/fold_" + str(fold) + '/'
-        if not os.path.exists(figure_directory):
-            os.makedirs(figure_directory)
+        print(input)
+        # session_fold_lookup_table = load_session_fold_lookup(
+        #     data_dir + 'all_animals_concat_session_fold_lookup.npz')
 
-        # Subset to sessions of interest for fold
-        # sessions_to_keep = session_fold_lookup_table[np.where(
-        #     session_fold_lookup_table[:, 1] != fold), 0]
-        # idx_this_fold = [
-        #     str(sess) in sessions_to_keep and y[id, 0] != -1
-        #     for id, sess in enumerate(session)
-        # ]
-        # this_inpt, this_y, this_session = inpt[idx_this_fold, :], y[
-        #     idx_this_fold, :], session[idx_this_fold]
+        for fold in range(num_folds):
+            # Subset to relevant covariates for covar set of interest:
+            labels_for_plot = ['stim_probe X', 'stim_probe Y', 'stim_probe X*Y', 'stim_1 X', 'stim_1 Y', 'stim_1 X*Y', 'stim_2 X', 'stim_2 Y', 'stim_2 X*Y', 'stim_3 X', 'stim_3 Y', 'stim_3 X*Y', 'prev_resp', 'prev_acc', 'bias']
+            y = y.astype('int')
+            print(np.unique(y))
+            figure_directory = results_dir + 'GLM/' + group_str + '_fold_' + str(fold) + '/'
+            if not os.path.exists(figure_directory):
+                os.makedirs(figure_directory)
 
-        idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
-        # print(f'idx_this_y: {idx_this_y}')
-        this_input, this_y = input[idx_no_viol], y[idx_no_viol] # exclude any violation trials
-        # print(f'this_y: {this_y}')
-        print(f'shape of y: {np.shape(y)} vs shape of this_y: {np.shape(this_y)}')
-        print(f'shape of input: {np.shape(input)} vs shape of this_input: {np.shape(this_input)}')
-        
-        assert len(
-            np.unique(this_y)
-        ) == 2, "choice vector should only include 2 possible values"
-        train_size = input.shape[0]
+            # Subset to sessions of interest for fold
+            # sessions_to_keep = session_fold_lookup_table[np.where(
+            #     session_fold_lookup_table[:, 1] != fold), 0]
+            # idx_this_fold = [
+            #     str(sess) in sessions_to_keep and y[id, 0] != -1
+            #     for id, sess in enumerate(session)
+            # ]
+            # this_inpt, this_y, this_session = inpt[idx_this_fold, :], y[
+            #     idx_this_fold, :], session[idx_this_fold]
 
-        # M = this_inpt.shape[1]
-        M = input.shape[1]
-        loglikelihood_train_vector = []
+            idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
+            # print(f'idx_this_y: {idx_this_y}')
+            this_input, this_y = input[idx_no_viol], y[idx_no_viol] # exclude any violation trials
+            # print(f'this_y: {this_y}')
+            print(f'shape of y: {np.shape(y)} vs shape of this_y: {np.shape(this_y)}')
+            print(f'shape of input: {np.shape(input)} vs shape of this_input: {np.shape(this_input)}')
+            
+            assert len(
+                np.unique(this_y)
+            ) == 2, "choice vector should only include 2 possible values"
+            train_size = input.shape[0]
 
-        for iter in range(N_initializations):  # GLM fitting should be
-            # independent of initialization, so fitting multiple
-            # initializations is a good way to check that everything is
-            # working correctly
-            loglikelihood_train, recovered_weights = fit_glm([this_input],
-                                                             [this_y], M, C)
-            print(f'iter {iter}, recovered_weights: {recovered_weights}')
-            weights_for_plotting = append_zeros(recovered_weights)
-            print(f'weights_for_plotting: {weights_for_plotting}')
-            plot_input_vectors(weights_for_plotting,
-                               figure_directory,
-                               title="GLM fit; Final LL = " +
-                               str(loglikelihood_train),
-                               save_title='init' + str(iter),
-                               labels_for_plot=labels_for_plot)
-            loglikelihood_train_vector.append(loglikelihood_train)
-            np.savez(
-                figure_directory + 'variables_of_interest_iter_' + str(iter) +
-                '.npz', loglikelihood_train, recovered_weights)
+            # M = this_inpt.shape[1]
+            M = input.shape[1]
+            loglikelihood_train_vector = []
+
+            for iter in range(N_initializations):  # GLM fitting should be
+                # independent of initialization, so fitting multiple
+                # initializations is a good way to check that everything is
+                # working correctly
+                loglikelihood_train, recovered_weights = fit_glm([this_input],
+                                                                [this_y], M, C)
+                print(f'iter {iter}, recovered_weights: {recovered_weights}')
+                weights_for_plotting = append_zeros(recovered_weights)
+                print(f'weights_for_plotting: {weights_for_plotting}')
+                plot_input_vectors(weights_for_plotting,
+                                figure_directory,
+                                title="GLM fit; Final LL = " +
+                                str(loglikelihood_train),
+                                save_title='init' + str(iter),
+                                labels_for_plot=labels_for_plot)
+                loglikelihood_train_vector.append(loglikelihood_train)
+                np.savez(
+                    figure_directory + 'variables_of_interest_iter_' + str(iter) +
+                    '.npz', loglikelihood_train, recovered_weights)

@@ -81,9 +81,9 @@ class glm(object):
             self.params = params
             obj = self.log_marginal(datas, inputs, masks, tags)
 
-            # Compute gradients using autograd (my addition)
-            gradient_func = grad(lambda params: -self.log_marginal(datas, inputs, masks, tags))
-            gradient = gradient_func(params)
+            # # Compute gradients using autograd (my addition)
+            # gradient_func = grad(lambda params: -self.log_marginal(datas, inputs, masks, tags))
+            # gradient = gradient_func(params)
             
             # Print or log gradient values for inspection (my addition)
             # print("Gradient values:", gradient)
