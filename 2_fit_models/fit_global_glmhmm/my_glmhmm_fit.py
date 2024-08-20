@@ -10,7 +10,7 @@ D = 1  # data (observations) dimension
 C = 2  # number of output types/categories
 N_em_iters = 300  # number of EM iterations
 
-K_vals = [2, 3, 4, 5] # number of states 
+K_vals = [2] #[2, 3, 4, 5] # number of states 
 num_folds = 5
 N_initializations = 20
 
@@ -27,6 +27,7 @@ if __name__ == '__main__':
 
     for group in range(1,4): # iterate through groups 1-3 
         group_str = f'{group:02d}'
+        print(f"For group {group}:")
 
         num_folds = 5
         global_fit = True
@@ -34,17 +35,19 @@ if __name__ == '__main__':
         transition_alpha = 1
         prior_sigma = 100
 
-        # cluster_arr = []
-        # for K in K_vals:
-        #     for i in range(num_folds):
-        #         for j in range(N_initializations):
-        #             cluster_arr.append([K, i, j])
-        # [K, fold, iter] = cluster_arr[z]
-        # print(f'K: {K}, fold: {fold}, iter: {iter}')
+        cluster_arr = []
+        for K in K_vals:
+            for i in range(num_folds):
+                for j in range(N_initializations):
+                    cluster_arr.append([K, i, j])
+        [K, fold, iter] = cluster_arr[z]
+        print(f'K: {K}, fold: {fold}, iter: {iter}')
         # print(f'cluster_arr: {cluster_arr}')
-        K = 3
-        fold = 0
-        iter = 0
+
+        # mine for testing
+        # K = 2
+        # fold = 0
+        # iter = 0
         
         #  read in data and train/test split
         subj_file = data_dir + group_str + '_all_subj_concat.npz'
@@ -70,7 +73,7 @@ if __name__ == '__main__':
 
         # create save directory for this initialization/fold combination:
         save_directory = results_dir + '/GLM_HMM_K_' + str(
-            K) + '/' + 'fold_' + str(fold) + '/' + '/iter_' + str(iter) + '/'
+            K) + '/' + group_str + '_fold_' + str(fold) + '/' + '/iter_' + str(iter) + '/'
         if not os.path.exists(save_directory):
             os.makedirs(save_directory)
 
@@ -78,6 +81,7 @@ if __name__ == '__main__':
         print("Starting inference with K = " + str(K) + "; Fold = " + str(fold) +
             "; Iter = " + str(iter))
         sys.stdout.flush()
+        # normally lookup table stuff would go here
         idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
         this_input, this_y = input[idx_no_viol], y[idx_no_viol] # exclude any violation trials
         this_mask = mask[idx_no_viol]

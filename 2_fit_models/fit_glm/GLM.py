@@ -6,7 +6,6 @@ from autograd.scipy.special import logsumexp
 from ssm.util import ensure_args_are_lists
 from ssm.optimizers import adam, bfgs, rmsprop, sgd
 import ssm.stats as stats
-from autograd import grad # my addition
 
 
 class glm(object):
@@ -26,7 +25,7 @@ class glm(object):
     @params.setter
     def params(self, value):
         self.Wk = value
-
+    
     def log_prior(self):
         return 0
 
@@ -80,16 +79,9 @@ class glm(object):
         def _objective(params, itr):
             self.params = params
             obj = self.log_marginal(datas, inputs, masks, tags)
-
-            # # Compute gradients using autograd (my addition)
-            # gradient_func = grad(lambda params: -self.log_marginal(datas, inputs, masks, tags))
-            # gradient = gradient_func(params)
-            
-            # Print or log gradient values for inspection (my addition)
-            # print("Gradient values:", gradient)
-
             return -obj
 
+        # Fit the model
         self.params = optimizer(_objective,
                                 self.params,
                                 num_iters=num_iters,

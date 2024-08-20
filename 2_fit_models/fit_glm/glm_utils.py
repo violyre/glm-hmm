@@ -2,6 +2,7 @@ import autograd.numpy as np
 import autograd.numpy.random as npr
 import matplotlib.pyplot as plt
 from GLM import glm
+from scipy.stats import chi2 # my addition
 
 npr.seed(65)
 
@@ -22,6 +23,8 @@ def fit_glm(inputs, datas, M, C):
     # print(f'params: {new_glm.params}') # my addition
     # Get loglikelihood of training data:
     loglikelihood_train = new_glm.log_marginal(datas, inputs, None, None)
+    # deviance = -2 * loglikelihood_train # my addition
+    # print(f'deviance: {deviance}')
     recovered_weights = new_glm.Wk
     return loglikelihood_train, recovered_weights
 
@@ -52,6 +55,7 @@ def load_animal_list(list_file):
 
 
 def plot_input_vectors(Ws,
+                    #    p_values, # my addition
                        figure_directory,
                        title='true',
                        save_title="true",
@@ -59,8 +63,9 @@ def plot_input_vectors(Ws,
     K = Ws.shape[0]
     K_prime = Ws.shape[1]
     M = Ws.shape[2] - 1
-    print(f'K: {K}, K_prime: {K_prime}, M: {M}') # my addition
-    print(f'Ws: {Ws}, shape {Ws.shape}') # my addition
+    # print(f'K: {K}, K_prime: {K_prime}, M: {M}') # my addition
+    # print(f'Ws: {Ws}, shape {Ws.shape}') # my addition
+    
     fig = plt.figure(figsize=(7, 9), dpi=80, facecolor='w', edgecolor='k')
     plt.subplots_adjust(left=0.15,
                         bottom=0.27,
@@ -85,7 +90,24 @@ def plot_input_vectors(Ws,
                            ['Stimulus', 'Past Choice', 'Bias'],
                            rotation='90',
                            fontsize=12)
-            plt.ylim((-3, 6))
+                
+            # # plot p_value annotations: my addition
+            # for i in range(M+1):
+            #     p_val = p_values[j][k][i]
+            #     if p_val < 0.001:
+            #         significance = '***'
+            #     elif p_val < 0.01:
+            #         significance = '**'
+            #     elif p_val < 0.05:
+            #         significance = '*'
+            #     else:
+            #         significance = ''
+
+            #     if significance:
+            #         plt.annotate(significance, (i, -Ws[j][k][i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+            #plt.ylim((-3, 6))
+            plt.ylim((-6,6))
 
     fig.text(0.04,
              0.5,
@@ -96,3 +118,44 @@ def plot_input_vectors(Ws,
              fontsize=15)
     fig.suptitle("GLM Weights: " + title, y=0.99, fontsize=14)
     fig.savefig(figure_directory + 'glm_weights_' + save_title + '.png')
+
+    # fig.show() # my addition
+
+# plot log-likelihood comparisons between removing features and original
+def plot_feature_selection_ll(all_labels,loglikelihood_vectors,original_loglikelihood,num_folds,
+                                directory,
+                                title,
+                                save_title,
+                                type):
+    # Plot the results
+    plt.figure(figsize=(10, 6))
+    plt.xlabel('Removed Feature')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    if type == 'Fold':
+        plt.ylabel('Log-Likelihood')
+        for fold in range(num_folds):
+            plt.plot(all_labels,loglikelihood_vectors[fold], marker='o', label=f'Fold {fold}')
+        plt.axhline(y=original_loglikelihood, color='r', linestyle='--', label='Original Log-Likelihood')
+    elif type == 'GroupDiff':
+        plt.ylabel('Difference in Log-Likelihood')
+        for group in range(1,4):
+            plt.plot(all_labels, loglikelihood_vectors[group-1]-original_loglikelihood[group-1], marker='o', label=f'Group {group}')
+        plt.axhline(y=0, color='r', linestyle='--', label='No Difference')
+    elif type == 'Group':
+        plt.ylabel('Log-Likelihood')
+        for group in range(1,4):
+            plt.plot(all_labels, loglikelihood_vectors[group-1], marker='o', label=f'Group {group}')
+            plt.axhline(y=original_loglikelihood[group-1], color='r', linestyle='--', label=f'Original Log-Likelihood, Group {group}')
+    else: 
+        raise Exception("Invalid type! Must be 'Fold', 'Group', or 'GroupDiff'")
+    plt.title(f'Feature Selection Log-Likelihood Comparison for {title}')
+    plt.legend()
+    plt.savefig(f"{directory}{save_title}")
+    plt.show()
+
+# update the feature list based on features to remove
+def update_features(features_to_remove, all_labels):
+    # Filter out the features to remove
+    features_to_keep = [label for label in all_labels if label not in features_to_remove]
+    return features_to_keep

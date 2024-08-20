@@ -96,14 +96,16 @@ if __name__ == '__main__':
         # obtain unnormalized data.  Write out each animal's data and then also
         # write to master array
 
-        stim_key = pd.read_csv(os.path.join(data_path, 'StimulusLocationInfo.csv'))
-        print(f'stim_key: {stim_key.shape}')
-        stim_key.iloc[:,1] = stim_key.iloc[:,1].str.strip('%').astype(float)/100
-        stim_key.iloc[:,2] = stim_key.iloc[:,2].str.strip('%').astype(float)/100
-        stim_key['XPos'] = (2 * stim_key['XPos']) - 1
-        stim_key['YPos'] = (2 * stim_key['YPos']) - 1
+        stim_key = pd.read_csv(os.path.join(data_path, 'StimulusLocationInfo.csv')) # get 'key' of stim position coordinates in % form
+        print(f'stim_key: {stim_key.shape}') # print the shape of it for debugging
+        stim_key.iloc[:,1] = stim_key.iloc[:,1].str.strip('%').astype(float)/100 # convert X to decimal from percentage
+        stim_key.iloc[:,2] = stim_key.iloc[:,2].str.strip('%').astype(float)/100 # convert Y to decimal from percentage
+        stim_key['XPos'] = (2 * stim_key['XPos']) - 1 # map X over range [-1, 1]
+        stim_key['YPos'] = (2 * stim_key['YPos']) - 1 # map Y over range [-1, 1]
 
-        stim_key["XY"] = stim_key['XPos'] * stim_key['YPos']
+        #stim_key["XY"] = stim_key['XPos'] * stim_key['YPos']
+        stim_key["Dist"] = np.sqrt(stim_key['XPos']**2 + stim_key['YPos']**2)
+        stim_key["Angle"] = np.arctan(stim_key['XPos']/stim_key['YPos'])
         # print(f'stim_key: {stim_key}')
 
         final_subject_list = [] # list to store IDs of only the subjects we end up continuing with (sufficient trials)
@@ -167,7 +169,7 @@ if __name__ == '__main__':
             data = pd.merge(data, stim_key.add_suffix('_stim_2'), left_on='Stimulus_dot2', right_on='Stimulus_stim_2', how='left')
             data = pd.merge(data, stim_key.add_suffix('_stim_3'), left_on='Stimulus_dot3', right_on='Stimulus_stim_3', how='left')
             data = data.drop(columns=['Stimulus_stim_probe', 'Stimulus_stim_1', 'Stimulus_stim_2', 'Stimulus_stim_3'])
-            # print(data.head())
+            #print(data.head())
 
             pd.DataFrame(data).to_csv(data_path + '/partially_processed/preproc_' + filename) # save data with the new columns added and blanks filled in
 
@@ -185,23 +187,30 @@ if __name__ == '__main__':
                 final_subject_list.append(subject) # if it has enough trials, append it to the new list
 
             # create_design_mat:
-            unnormalized_input = np.zeros((len(data['Condition']), 14)) # change number of weights here
+            unnormalized_input = np.zeros((len(data['Condition']), 18)) # change number of weights here
 
             unnormalized_input[:,0] = data['XPos_stim_probe']
             unnormalized_input[:,1] = data['YPos_stim_probe']
-            unnormalized_input[:,2] = data['XY_stim_probe']
-            unnormalized_input[:,3] = data['XPos_stim_1']
-            unnormalized_input[:,4] = data['YPos_stim_1']
-            unnormalized_input[:,5] = data['XY_stim_1']
-            unnormalized_input[:,6] = data['XPos_stim_2']
-            unnormalized_input[:,7] = data['YPos_stim_2']
-            unnormalized_input[:,8] = data['XY_stim_2']
-            unnormalized_input[:,9] = data['XPos_stim_3']
-            unnormalized_input[:,10] = data['YPos_stim_3']
-            unnormalized_input[:,11] = data['XY_stim_3']
+            unnormalized_input[:,2] = data['Dist_stim_probe']
+            unnormalized_input[:,3] = data['Angle_stim_probe']
 
-            unnormalized_input[:,12] = prev_choice
-            unnormalized_input[:,13] = prev_accuracy
+            unnormalized_input[:,4] = data['XPos_stim_1']
+            unnormalized_input[:,5] = data['YPos_stim_1']
+            unnormalized_input[:,6] = data['Dist_stim_1']
+            unnormalized_input[:,7] = data['Angle_stim_1']
+
+            unnormalized_input[:,8] = data['XPos_stim_2']
+            unnormalized_input[:,9] = data['YPos_stim_2']
+            unnormalized_input[:,10] = data['Dist_stim_2']
+            unnormalized_input[:,11] = data['Angle_stim_2']
+
+            unnormalized_input[:,12] = data['XPos_stim_3']
+            unnormalized_input[:,13] = data['YPos_stim_3']
+            unnormalized_input[:,14] = data['Dist_stim_3']
+            unnormalized_input[:,15] = data['Angle_stim_3']
+
+            unnormalized_input[:,16] = prev_choice
+            unnormalized_input[:,17] = prev_accuracy
 
             y = np.expand_dims(data['Response'], axis=1) # don't need to remap choice vals for our task (?)
             correct = np.expand_dims(prev_accuracy, axis=1)
