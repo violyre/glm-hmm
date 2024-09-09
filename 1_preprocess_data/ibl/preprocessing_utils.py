@@ -73,6 +73,8 @@ def create_previous_choice_vector(choice):
             # since no previous choice, bernoulli sample: (not output of
             # bernoulli rvs is in {1, 2})
             previous_choice[loc] = bernoulli.rvs(0.5, 1) - 1
+            # previous_choice = np.delete(previous_choice, (loc), axis=0) # delete the first choice in every session (mine)
+            # previous_choice[loc] = -1 # set as violation
         else:
             # find nearest loc that has a previous choice value that is not
             # -1, and that is earlier than current trial

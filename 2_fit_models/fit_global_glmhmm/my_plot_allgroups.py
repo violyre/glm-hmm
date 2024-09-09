@@ -2,17 +2,37 @@ import os
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from glm_hmm_utils import update_features
+
+all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
+                'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
+                'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
+                'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
+                'prev_resp', 'prev_acc', 'bias']
+
+doing_feature_selection = True # change this flag if you are using this code to do feature selection or not
+
+# for manual feature selection
+features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
+                      'stim_2 X', 'stim_2 Y', 'stim_3 X', 'stim_3 Y']  # Update this list with features you want to remove
+
+# Update features and labels based on removal
+feat_idxs_to_keep = update_features(features_to_remove, all_labels)
+labels_for_plot = [all_labels[i] for i in feat_idxs_to_keep]
+print(labels_for_plot)
+if 'bias' not in features_to_remove:
+    feat_idxs_to_keep = feat_idxs_to_keep[:-1] # remove last term so it doesn't cause an issue with input
 
 if __name__ == '__main__':
     data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/'
     results_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/results/global_fit/'
     save_directory = data_dir + "best_global_params/"
 
-    labels_for_plot = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
-                'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
-                'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
-                'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
-                'prev_resp', 'prev_acc', 'bias']
+    # labels_for_plot = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
+    #             'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
+    #             'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
+    #             'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
+    #             'prev_resp', 'prev_acc', 'bias']
     
     all_weights = []
     

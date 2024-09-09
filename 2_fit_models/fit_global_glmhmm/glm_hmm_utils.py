@@ -198,3 +198,11 @@ def create_violation_mask(violation_idx, T):
         violation_idx
     ) == T, "violation and non-violation idx do not include all dta!"
     return nonviolation_idx, np.expand_dims(mask, axis=1)
+
+# update the feature list based on features to remove
+def update_features(features_to_remove, all_labels):
+    # Filter out the features to remove
+    # features_to_keep = [label for label in all_labels if label not in features_to_remove]
+    feat_idxs_to_keep = [idx for idx, feat in enumerate(all_labels) if feat not in features_to_remove]
+    # features_to_keep = [all_labels[i] for i in feat_idxs_to_keep]
+    return feat_idxs_to_keep

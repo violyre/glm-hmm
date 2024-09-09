@@ -9,6 +9,7 @@ from glm_utils import load_session_fold_lookup, load_data, fit_glm, \
     update_features
 from tqdm import tqdm # my addition
 import statistics # for variance
+import matplotlib.pyplot as plt
 
 C = 2  # number of output types/categories
 N_initializations = 10 # where does this come from?
@@ -20,13 +21,19 @@ all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe ang
                 'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
                 'prev_resp', 'prev_acc', 'bias']
 
-doing_feature_selection = True # change this flag if you are using this code to do feature selection or not
+doing_feature_selection = False # change this flag if you are using this code to do feature selection or not
 
 # for manual feature selection
-# features_to_remove = ['stim_probe Y', 'stim_1 Y', 'stim_2 Y', 'stim_3 Y']  # Update this list with features you want to remove
+features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
+                      'stim_2 X', 'stim_2 Y', 'stim_3 X', 'stim_3 Y', 'bias']  # Update this list with features you want to remove
 
 # # Update features and labels based on removal
-# labels_for_plot = update_features(features_to_remove, all_labels)
+feat_idxs_to_keep = update_features(features_to_remove, all_labels)
+labels_for_plot = [all_labels[i] for i in feat_idxs_to_keep]
+print(labels_for_plot)
+
+if 'bias' not in features_to_remove:
+    feat_idxs_to_keep = feat_idxs_to_keep[:-1] # remove last term so it doesn't cause an issue with input
 
 if __name__ == '__main__':
     data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/'
@@ -51,27 +58,31 @@ if __name__ == '__main__':
 
         # Fit GLM to all data
         subj_file = data_dir + group_str + '_all_subj_concat.npz'
-        # input, y = load_data(subj_file)
+        # inpt, y = load_data(subj_file)
         container = np.load(subj_file, allow_pickle=True)
         data = [container[key] for key in container]
-        input = data[0]
+        inpt = data[0]
         y = data[1]
+        y = y.astype('int')
 
         # # suggested optimization of above
         # subj_file = os.path.join(data_dir, f'{group_str}_all_subj_concat.npz')
         # container = np.load(subj_file, allow_pickle=True)
-        # input, y = container['arr_0'], container['arr_1']
+        # inpt, y = container['arr_0'], container['arr_1']
         # y = y.astype('int')
 
         # session_fold_lookup_table = load_session_fold_lookup(
         #     data_dir + 'all_animals_concat_session_fold_lookup.npz')
+
+        # remove features if needed
+        inpt = inpt[:, feat_idxs_to_keep]
+        print(np.shape(inpt))
 
         if doing_feature_selection:
             ll_vectors_allfolds = [] # store ll vectors of all folds
             original_loglikelihoods = [] # store original loglikelihoods calculated for each fold
 
         for fold in range(num_folds):
-            y = y.astype('int')
             figure_directory = results_dir + 'GLM/' + group_str + '_fold_' + str(fold) + '/'
             if not os.path.exists(figure_directory):
                 os.makedirs(figure_directory)
@@ -87,21 +98,21 @@ if __name__ == '__main__':
             #     idx_this_fold, :], session[idx_this_fold]
 
             idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
-            this_input, this_y = input[idx_no_viol], y[idx_no_viol] # exclude any violation trials
+            this_inpt, this_y = inpt[idx_no_viol], y[idx_no_viol] # exclude any violation trials
             # print(f'shape of y: {np.shape(y)} vs shape of this_y: {np.shape(this_y)}')
-            # print(f'shape of input: {np.shape(input)} vs shape of this_input: {np.shape(this_input)}')
+            # print(f'shape of input: {np.shape(inpt)} vs shape of this_inpt: {np.shape(this_inpt)}')
             
             assert len(np.unique(this_y)) == 2, "choice vector should only include 2 possible values"
-            train_size = input.shape[0]
+            train_size = inpt.shape[0]
 
             # if not doing feature selection, just plot the regular glm with all features
             if not doing_feature_selection:
                 # M = this_inpt.shape[1]
-                M = input.shape[1]
+                M = inpt.shape[1]
                 loglikelihood_train_vector = []
 
                 for iter in tqdm(range(N_initializations), desc=f'Group {group}, Fold {fold}', unit='init'):  
-                    loglikelihood_train, recovered_weights = fit_glm([this_input],
+                    loglikelihood_train, recovered_weights = fit_glm([this_inpt],
                                                                     [this_y], M, C)
                     # print(f'iter {iter}, recovered_weights: {recovered_weights}')
                     weights_for_plotting = append_zeros(recovered_weights)
@@ -115,37 +126,40 @@ if __name__ == '__main__':
                                     save_title='group' + str(group) + '_init' + str(iter),
                                     labels_for_plot=labels_for_plot)
                     loglikelihood_train_vector.append(loglikelihood_train)
-                    np.savez(
-                        figure_directory + 'variables_of_interest_iter_' + str(iter) +
-                        '.npz', loglikelihood_train, recovered_weights)
-                
+                    np.savez(figure_directory + 'variables_of_interest_iter_' + str(iter) + '.npz', loglikelihood_train, recovered_weights)
+                    # print(f"saved {figure_directory + 'variables_of_interest_iter_' + str(iter) + '.npz'}")
+                plt.close('all') # close all figures after each group is done to save memory
+
                 # # suggested optimization of above
                 # loglikelihood_train_vector = [
-                #     fit_glm([this_input], [this_y], M, C)[0]
+                #     fit_glm([this_inpt], [this_y], M, C)[0]
                 #     for _ in tqdm(range(N_initializations), desc=f'Group {group_str}, Fold 1', unit='init')
                 # ]
-                # weights_for_plotting = append_zeros(fit_glm([this_input], [this_y], M, C)[1])
+                # weights_for_plotting = append_zeros(fit_glm([this_inpt], [this_y], M, C)[1])
                 # plot_input_vectors(weights_for_plotting, figure_directory, title=f"GLM fit Group {group}; Final LL = {np.mean(loglikelihood_train_vector)}",
-                #                 save_title=f'group{group}_init', labels_for_plot=all_labels)
+                #                 save_title=f'group{group}_init', labels_for_plot=labels_for_plot)
 
                 # np.savez(os.path.join(figure_directory, f'variables_of_interest_iter_{N_initializations}.npz'),
                 #         loglikelihood_train_vector, weights_for_plotting)
             elif doing_feature_selection:
-                # original_loglikelihoods = [fit_glm([this_input], [this_y], input.shape[1], C)[0] for _ in range(N_initializations)]
-                original_loglikelihood = np.mean([fit_glm([this_input], [this_y], input.shape[1], C)[0] for _ in range(N_initializations)]) # assume they are all very similar
+                # original_loglikelihoods = [fit_glm([this_inpt], [this_y], inpt.shape[1], C)[0] for _ in range(N_initializations)]
+                original_loglikelihood = np.mean([fit_glm([this_inpt], [this_y], inpt.shape[1], C)[0] for _ in range(N_initializations)]) # assume they are all very similar
                 print(f'Original loglikelihood for group {group}: {original_loglikelihood}')
 
                 loglikelihood_vectors = []
+                if 'bias' in labels_for_plot:
+                    all_feats = labels_for_plot[:,-1] # remove the bias label so it won't cause an issue in this usage
+                else:
+                    all_feats = labels_for_plot
 
                 # Iterate over each feature to remove it one at a time
-                for feature_to_remove in tqdm(all_labels[:-1], desc=f'Group {group}, Fold {fold}, Feature Selection', unit='feature'):
-                    labels_for_plot = update_features([feature_to_remove], all_labels[:-1])
-                    feature_indices = [all_labels[:-1].index(label) for label in labels_for_plot]
-                    this_input_mod = this_input[:, feature_indices]  # Select only the relevant columns
+                for feature_to_remove in tqdm(all_feats, desc=f'Group {group}, Fold {fold}, Feature Selection', unit='feature'):
+                    feature_indices = update_features([feature_to_remove], all_feats)
+                    this_inpt_mod = this_inpt[:, feature_indices]  # Select only the relevant columns
 
                     M = len(feature_indices)
                     loglikelihood_train_vector = [
-                        fit_glm([this_input_mod], [this_y], M, C)[0]
+                        fit_glm([this_inpt_mod], [this_y], M, C)[0]
                         for _ in range(N_initializations)
                     ]
                     if statistics.variance(loglikelihood_train_vector)>1:
@@ -163,7 +177,7 @@ if __name__ == '__main__':
             assert np.shape(original_loglikelihoods)[0] == num_folds, "incorrect number of original LLs stored"
             original_ll_allgroups.append(np.mean(original_loglikelihoods)) # should ultimately store 1 value for each group
 
-            plot_feature_selection_ll(all_labels[:-1],ll_vectors_allfolds,original_ll_allgroups[group-1],num_folds,
+            plot_feature_selection_ll(all_feats,ll_vectors_allfolds,original_ll_allgroups[group-1],num_folds,
                                         directory=results_dir + 'GLM/',
                                         title=f'Group {group}',
                                         save_title=f"feat_select_ll_group_{group}.png",
@@ -178,7 +192,7 @@ if __name__ == '__main__':
 
         np.savez(results_dir + 'GLM/' + 'feat_select_all_lls.npz', ll_vectors_allgroups, original_ll_allgroups)
 
-        plot_feature_selection_ll(all_labels[:-1],ll_vectors_allgroups,original_ll_allgroups,num_folds,
+        plot_feature_selection_ll(all_feats,ll_vectors_allgroups,original_ll_allgroups,num_folds,
                                     directory=results_dir + 'GLM/',
                                     title=f'All Groups, Averaged Across Folds',
                                     save_title="feat_select_ll_allgroups_diff.png",

@@ -53,6 +53,11 @@ def load_animal_list(list_file):
     animal_list = data[0]
     return animal_list
 
+def load_subj_list(list_file):
+    container = np.load(list_file, allow_pickle=True)
+    data = [container[key] for key in container]
+    subj_list = data[0]
+    return subj_list
 
 def plot_input_vectors(Ws,
                     #    p_values, # my addition
@@ -152,10 +157,12 @@ def plot_feature_selection_ll(all_labels,loglikelihood_vectors,original_loglikel
     plt.title(f'Feature Selection Log-Likelihood Comparison for {title}')
     plt.legend()
     plt.savefig(f"{directory}{save_title}")
-    plt.show()
+    #plt.show()
 
 # update the feature list based on features to remove
 def update_features(features_to_remove, all_labels):
     # Filter out the features to remove
-    features_to_keep = [label for label in all_labels if label not in features_to_remove]
-    return features_to_keep
+    # features_to_keep = [label for label in all_labels if label not in features_to_remove]
+    feat_idxs_to_keep = [idx for idx, feat in enumerate(all_labels) if feat not in features_to_remove]
+    # features_to_keep = [all_labels[i] for i in feat_idxs_to_keep]
+    return feat_idxs_to_keep
