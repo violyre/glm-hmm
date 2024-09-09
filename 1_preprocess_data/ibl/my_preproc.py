@@ -10,6 +10,7 @@ from collections import defaultdict
 import re # regex
 import pandas as pd 
 from preprocessing_utils import create_previous_choice_vector
+import math
 
 # npr.seed(65)
 delete_first_trial = True # change this flag if you don't want to delete the first trial
@@ -107,7 +108,11 @@ if __name__ == '__main__':
 
             #stim_key["XY"] = stim_key['XPos'] * stim_key['YPos']
             stim_key["Dist"] = np.sqrt(stim_key['XPos']**2 + stim_key['YPos']**2)
-            stim_key["Angle"] = np.arctan(stim_key['YPos']/stim_key['XPos'])
+            stim_key["Angle"] = np.arctan2(stim_key['YPos'],stim_key['XPos'])
+
+            # normalize
+            stim_key["Dist_Norm"] = (np.copy(stim_key["Dist"]) - 0) / (np.sqrt(2) - 0)
+            stim_key["Angle_Norm"] = (np.copy(stim_key["Angle"]) - -math.pi) / (math.pi - -math.pi)
             # print(f'stim_key: {stim_key}')
 
             pd.DataFrame(stim_key).to_csv(data_path + '/stim_key_normalized.csv') # save as csv
@@ -200,23 +205,23 @@ if __name__ == '__main__':
 
             unnormalized_inpt[:,0] = data['XPos_stim_probe']
             unnormalized_inpt[:,1] = data['YPos_stim_probe']
-            unnormalized_inpt[:,2] = data['Dist_stim_probe']
-            unnormalized_inpt[:,3] = data['Angle_stim_probe']
+            unnormalized_inpt[:,2] = data['Dist_Norm_stim_probe']
+            unnormalized_inpt[:,3] = data['Angle_Norm_stim_probe']
 
             unnormalized_inpt[:,4] = data['XPos_stim_1']
             unnormalized_inpt[:,5] = data['YPos_stim_1']
-            unnormalized_inpt[:,6] = data['Dist_stim_1']
-            unnormalized_inpt[:,7] = data['Angle_stim_1']
+            unnormalized_inpt[:,6] = data['Dist_Norm_stim_1']
+            unnormalized_inpt[:,7] = data['Angle_Norm_stim_1']
 
             unnormalized_inpt[:,8] = data['XPos_stim_2']
             unnormalized_inpt[:,9] = data['YPos_stim_2']
-            unnormalized_inpt[:,10] = data['Dist_stim_2']
-            unnormalized_inpt[:,11] = data['Angle_stim_2']
+            unnormalized_inpt[:,10] = data['Dist_Norm_stim_2']
+            unnormalized_inpt[:,11] = data['Angle_Norm_stim_2']
 
             unnormalized_inpt[:,12] = data['XPos_stim_3']
             unnormalized_inpt[:,13] = data['YPos_stim_3']
-            unnormalized_inpt[:,14] = data['Dist_stim_3']
-            unnormalized_inpt[:,15] = data['Angle_stim_3']
+            unnormalized_inpt[:,14] = data['Dist_Norm_stim_3']
+            unnormalized_inpt[:,15] = data['Angle_Norm_stim_3']
 
             unnormalized_inpt[:,16] = prev_choice
             unnormalized_inpt[:,17] = prev_accuracy
@@ -235,7 +240,7 @@ if __name__ == '__main__':
             # write out subject's unnormalized data matrix:
             np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_unnormalized.npz', subj_unnormalized_inpt, subj_y)
             # trial_fold_lookup = 
-            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_trial_fold_lookup.npz', trial_fold_lookup)
+            # np.savez(processed_data_path + 'data_by_subj/' + group_str + '_trial_fold_lookup.npz', trial_fold_lookup)
             
             np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_correct.npz', subj_correct)
             assert subj_correct.shape[0] == subj_y.shape[0] # ?

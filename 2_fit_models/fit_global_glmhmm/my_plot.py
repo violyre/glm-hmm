@@ -63,6 +63,13 @@ if __name__ == '__main__':
             data = [container[key] for key in container]
             hmm_params = data[0]
             lls = data[1]
+            print(hmm_params)
+
+            # if group is 1: # manually flip states for groups that differ in state labeling
+            #     temp = np.copy(hmm_params[1])
+            #     hmm_params[2][1] = np.copy(hmm_params[2][0])
+            #     hmm_params[2][0] = np.copy(temp)
+            # print(hmm_params)
 
             # Calculate permutation
             # permutation = calculate_state_permutation(hmm_params)
@@ -87,7 +94,7 @@ if __name__ == '__main__':
 
             np.savez(
                 save_directory + 'best_params_' + group_str + '_K_' + str(K) + '.npz',
-                params_for_individual_initialization)
+                params_for_individual_initialization) # need to check on this -- how are they determining best params?
 
             # Plot these too:
             cols = ["#e74c3c", "#15b01a", "#7e1e9c", "#3498db", "#f97306"]
@@ -138,6 +145,7 @@ if __name__ == '__main__':
                                     fontsize=30)
             plt.ylabel("Previous State", fontsize=30)
             plt.xlabel("Next State", fontsize=30)
+
             plt.xlim(-0.5, K - 0.5)
             plt.ylim(-0.5, K - 0.5)
             plt.xticks(range(0, K), ('1', '2', '3', '4', '4', '5', '6', '7',
@@ -146,6 +154,8 @@ if __name__ == '__main__':
             plt.yticks(range(0, K), ('1', '2', '3', '4', '4', '5', '6', '7',
                                     '8', '9', '10')[:K],
                     fontsize=30)
+            
+            plt.gca().invert_yaxis() # flip y-axis at sage's request
             plt.title("Retrieved", fontsize=40)
 
             # plt.subplot(1, 3, 3)

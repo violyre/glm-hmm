@@ -45,6 +45,10 @@ if __name__ == '__main__':
         data = [container[key] for key in container]
         params_for_individual_initialization = data[0]
         weight_vectors = params_for_individual_initialization[2]
+        if group is 1: # manually flip states for groups that differ in state labeling
+            temp = np.copy(weight_vectors[1])
+            weight_vectors[1] = np.copy(weight_vectors[0])
+            weight_vectors[0] = np.copy(temp)
         all_weights.append(weight_vectors)
         print(f"weights for group {group}: {weight_vectors}")
 

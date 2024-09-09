@@ -21,11 +21,11 @@ all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe ang
                 'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
                 'prev_resp', 'prev_acc', 'bias']
 
-doing_feature_selection = False # change this flag if you are using this code to do feature selection or not
+doing_feature_selection = True # change this flag if you are using this code to do feature selection or not
 
 # for manual feature selection
 features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
-                      'stim_2 X', 'stim_2 Y', 'stim_3 X', 'stim_3 Y', 'bias']  # Update this list with features you want to remove
+                      'stim_2 X', 'stim_2 Y', 'stim_3 X', 'stim_3 Y']  # Update this list with features you want to remove
 
 # # Update features and labels based on removal
 feat_idxs_to_keep = update_features(features_to_remove, all_labels)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
 
                 loglikelihood_vectors = []
                 if 'bias' in labels_for_plot:
-                    all_feats = labels_for_plot[:,-1] # remove the bias label so it won't cause an issue in this usage
+                    all_feats = labels_for_plot[:-1] # remove the bias label so it won't cause an issue in this usage
                 else:
                     all_feats = labels_for_plot
 
@@ -156,6 +156,7 @@ if __name__ == '__main__':
                 for feature_to_remove in tqdm(all_feats, desc=f'Group {group}, Fold {fold}, Feature Selection', unit='feature'):
                     feature_indices = update_features([feature_to_remove], all_feats)
                     this_inpt_mod = this_inpt[:, feature_indices]  # Select only the relevant columns
+                    print(f"\n Removing feature {feature_to_remove}, keeping indices {feature_indices}")
 
                     M = len(feature_indices)
                     loglikelihood_train_vector = [
@@ -166,6 +167,8 @@ if __name__ == '__main__':
                         print(f"High variance in vector for variable {feature_to_remove}")
                         input("Press enter to continue")
                     loglikelihood_vectors.append(np.mean(loglikelihood_train_vector))
+
+                    print(f"LL difference: {original_loglikelihood - np.mean(loglikelihood_train_vector)}")
                 
                 original_loglikelihoods.append(original_loglikelihood) # save the original loglikelihood calculated for this fold
 
@@ -186,7 +189,62 @@ if __name__ == '__main__':
             print(f"mean ll vector for group {group}: {np.mean(ll_vectors_allfolds, axis=0)}")
             ll_vectors_allgroups.append(np.mean(ll_vectors_allfolds,axis=0)) # should ultimately store 1 vector for each group
 
-    if doing_feature_selection:
+    if not doing_feature_selection: # plot all groups
+        fig = plt.figure(figsize=(7, 9), dpi=80, facecolor='w', edgecolor='k')
+        plt.subplots_adjust(left=0.15,
+                            bottom=0.27,
+                            right=0.95,
+                            top=0.95,
+                            wspace=0.3,
+                            hspace=0.3)
+        plt.axhline(y=0, color="k", alpha=0.5, ls="--")
+
+        for group in range(1,4):
+            group_str = f'{group:02d}' # which group we are currently looking at 
+            figure_directory = results_dir + 'GLM/' + group_str + '_fold_4' + '/' # take last fold
+            glm_vectors_file = figure_directory + 'variables_of_interest_iter_9' + '.npz' # take last iter
+            container = np.load(glm_vectors_file)
+            data = [container[key] for key in container]
+            loglikelihood_train = data[0]
+            recovered_weights = data[1]
+            Ws = append_zeros(recovered_weights)
+
+            K = Ws.shape[0]
+            K_prime = Ws.shape[1]
+            M = Ws.shape[2] - 1
+
+            for j in range(K):
+                for k in range(K_prime - 1):
+                    # plt.subplot(K, K_prime, 1+j*K_prime+k)
+                    plt.plot(range(M + 1), -Ws[j][k], marker='o', label=f'Group {group}')
+                    plt.plot(range(-1, M + 2), np.repeat(0, M + 3), 'k', alpha=0.2)
+                    if len(labels_for_plot) > 0:
+                        plt.xticks(list(range(0, len(labels_for_plot))),
+                                labels_for_plot,
+                                rotation='90',
+                                fontsize=12)
+                    else:
+                        plt.xticks(list(range(0, 3)),
+                                ['Stimulus', 'Past Choice', 'Bias'],
+                                rotation='90',
+                                fontsize=12)
+                        
+        plt.ylim((-6,6))
+        plt.legend()
+        
+        fig.text(0.04,
+                0.5,
+                "Weight",
+                ha="center",
+                va="center",
+                rotation=90,
+                fontsize=15)
+        fig.suptitle("GLM Weights, All Groups", y=0.99, fontsize=14)
+        fig.savefig(results_dir + 'GLM/' + 'glm_weights_allgroups' + '.png')
+
+        print("Non-feature selection run complete")
+
+    elif doing_feature_selection:
         assert np.shape(ll_vectors_allgroups)[0] == 3, "incorrect number of LL vectors stored at end"
         assert np.shape(original_ll_allgroups)[0] == 3, "incorrect number of original LLs stored"
 
@@ -197,3 +255,5 @@ if __name__ == '__main__':
                                     title=f'All Groups, Averaged Across Folds',
                                     save_title="feat_select_ll_allgroups_diff.png",
                                     type='GroupDiff')
+        
+        print("Feature selection complete")
