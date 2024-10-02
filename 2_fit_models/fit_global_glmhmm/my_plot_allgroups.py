@@ -45,15 +45,15 @@ if __name__ == '__main__':
         data = [container[key] for key in container]
         params_for_individual_initialization = data[0]
         weight_vectors = params_for_individual_initialization[2]
-        if group is 1: # manually flip states for groups that differ in state labeling
-            temp = np.copy(weight_vectors[1])
-            weight_vectors[1] = np.copy(weight_vectors[0])
-            weight_vectors[0] = np.copy(temp)
+        # if group is 1: # manually flip states for groups that differ in state labeling
+        #     temp = np.copy(weight_vectors[1])
+        #     weight_vectors[1] = np.copy(weight_vectors[0])
+        #     weight_vectors[0] = np.copy(temp)
         all_weights.append(weight_vectors)
         print(f"weights for group {group}: {weight_vectors}")
 
     print(f"all weights: {all_weights}")
-    print(f"group 1: {all_weights[1-1][1][0]}")
+    # print(f"group 1: {all_weights[1-1][1][0]}")
     
     # Plot these too:
     cols = ["#e74c3c", "#15b01a", "#7e1e9c", "#3498db", "#f97306"]

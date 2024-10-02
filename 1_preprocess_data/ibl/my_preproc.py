@@ -11,6 +11,7 @@ import re # regex
 import pandas as pd 
 from preprocessing_utils import create_previous_choice_vector
 import math
+from preprocessing_utils import split_train_test # my function
 
 # npr.seed(65)
 delete_first_trial = True # change this flag if you don't want to delete the first trial
@@ -239,8 +240,8 @@ if __name__ == '__main__':
 
             # write out subject's unnormalized data matrix:
             np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_unnormalized.npz', subj_unnormalized_inpt, subj_y)
-            # trial_fold_lookup = 
-            # np.savez(processed_data_path + 'data_by_subj/' + group_str + '_trial_fold_lookup.npz', trial_fold_lookup)
+            subj_trial_fold_lookup = split_train_test(subj_unnormalized_inpt, split_ratio=0.7)
+            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_trial_fold_lookup.npz', subj_trial_fold_lookup)
             
             np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_correct.npz', subj_correct)
             assert subj_correct.shape[0] == subj_y.shape[0] # ?
@@ -252,6 +253,7 @@ if __name__ == '__main__':
                 subject_end_idx[subject] = master_inpt.shape[0] - 1
                 master_y = np.copy(subj_y)
                 # master_session = subj_session
+                master_trial_fold_lookup_table = subj_trial_fold_lookup
                 master_correct = np.copy(subj_correct)
             else:
                 subject_start_idx[subject] = master_inpt.shape[0]
@@ -259,6 +261,8 @@ if __name__ == '__main__':
                 subject_end_idx[subject] = master_inpt.shape[0] - 1
                 master_y = np.vstack((master_y, subj_y))
                 # master_session = np.concatenate((master_session, subj_session))
+                master_trial_fold_lookup_table = np.vstack(
+                    (master_trial_fold_lookup_table, subj_trial_fold_lookup))
                 master_correct = np.vstack((master_correct, subj_correct))
             
         # num_subjects = len(final_subject_list)
@@ -269,22 +273,28 @@ if __name__ == '__main__':
             0], "inpt and y not same length"
         assert np.shape(master_correct)[0] == np.shape(master_y)[
             0], "correct and y not same length"
+        assert len(master_inpt) == \
+           np.shape(master_trial_fold_lookup_table)[
+               0], "number of total trials and trial fold lookup don't " \
+                   "match"
         # assert len(subject_list) == num_subjects, f"{num_subjects} subjects in group 1" # not sure what the point of doing this for us is
 
-        normalized_inpt = np.copy(master_inpt)
+        normalized_inpt = np.copy(master_inpt) # note that in my edits, the unnormalized version is also normalized
         # print(f'size normalized_inpt before scale: {np.shape(normalized_inpt)}')
         # normalized_inpt[:, 0] = preprocessing.scale(normalized_inpt[:, 0]) # ?
         # print(f'size normalized_inpt after scale: {np.shape(normalized_inpt)}')
         np.savez(processed_data_path + group_str + '_all_subj_concat.npz',
             normalized_inpt,
             master_y)
-        # np.savetxt(processed_data_path + 'all_subj_concat' + '.csv',
-        #     normalized_inpt)
         pd.DataFrame(normalized_inpt).to_csv(processed_data_path + group_str + '_all_subj_concat.csv') # also save as csv for readability
         pd.DataFrame(master_y).to_csv(processed_data_path + group_str + '_all_subj_concat_y.csv') # also save master_y as csv
         np.savez(
             processed_data_path + group_str + '_all_subj_concat_unnormalized.npz',
             master_inpt, master_y)
+        np.savez(
+            processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.npz',
+            master_trial_fold_lookup_table)
+        pd.DataFrame(master_trial_fold_lookup_table).to_csv(processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.csv') # save as csv for readability
         np.savez(processed_data_path + group_str + '_all_subj_concat_correct.npz',
             master_correct)
         np.savez(processed_data_path + 'data_by_subj/' + group_str + '_final_subject_list.npz',

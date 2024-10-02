@@ -24,6 +24,7 @@ all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe ang
                 'prev_resp', 'prev_acc', 'bias']
 
 doing_feature_selection = True # change this flag if you are using this code to do feature selection or not
+train_test_split = True # change this flag if you want to split train/test here
 
 # for manual feature selection
 features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
@@ -74,8 +75,7 @@ if __name__ == '__main__':
         
         #  read in data and train/test split
         subj_file = data_dir + group_str + '_all_subj_concat.npz'
-        # session_fold_lookup_table = load_session_fold_lookup(
-        #     data_dir + 'all_animals_concat_session_fold_lookup.npz')
+        trial_fold_lookup_table = load_session_fold_lookup(data_dir + group_str + '_all_subj_concat_trial_fold_lookup.npz')
 
         # inpt, y = load_data(subj_file)
         container = np.load(subj_file, allow_pickle=True)
@@ -109,13 +109,20 @@ if __name__ == '__main__':
         print("Starting inference with K = " + str(K) + "; Fold = " + str(fold) +
             "; Iter = " + str(iter))
         sys.stdout.flush()
-        # normally lookup table stuff would go here
-        idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
-        this_inpt, this_y = inpt[idx_no_viol], y[idx_no_viol] # exclude any violation trials
-        this_mask = mask[idx_no_viol]
+        # looks like they are including violation trials bc the mask is supposed to exclude them anyway?
+        if train_test_split:
+            trials_to_keep = np.where(trial_fold_lookup_table[:,1] == "train")[0] # indices in lookup table that correspond to "train"
+            idx_this_fold = [id for id in trials_to_keep] # not really any point in doing this but we'll keep it for readability
+    
+            # idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
+            this_inpt, this_y = inpt[idx_this_fold], y[idx_this_fold] 
+            this_mask = mask[idx_this_fold]
+        else:
+            this_inpt, this_y, this_mask = inpt, y, mask
         # Only do this so that errors are avoided - these y values will not
         # actually be used for anything (due to violation mask)
         this_y[np.where(this_y == -1), :] = 1
+        # we don't need to do partition_data_by_session since we already partitioned by trial and got the separate variables
         # Read in GLM fit if global_fit = True:
         if global_fit == True:
             _, params_for_initialization = load_glm_vectors(init_param_file)

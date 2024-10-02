@@ -98,7 +98,7 @@ def partition_data_by_session(inpt, y, mask, session):
 
 
 def get_train_test_dta(inpt, y, mask, session, session_fold_lookup_table,
-                       fold):
+                       fold): 
     '''
     Split inpt, y, mask, session arrays into train and test arrays
     :param inpt:
@@ -128,6 +128,18 @@ def get_train_test_dta(inpt, y, mask, session, session_fold_lookup_table,
     return test_inpt, test_y, test_mask, this_test_session, train_inpt, \
            train_y, train_mask, this_train_session
 
+# my version
+def get_train_test_dta_trials(inpt, y, mask, trial_fold_lookup_table):
+    test_trials = np.where(trial_fold_lookup_table[:, 1] == "test")[0]
+    train_trials = np.where(trial_fold_lookup_table[:, 1] == "train")[0]
+    idx_test = [trial for trial in test_trials]
+    idx_train = [trial for trial in train_trials]
+    test_inpt, test_y, test_mask = inpt[idx_test, :], y[idx_test, :], mask[idx_test]
+    train_inpt, train_y, train_mask = inpt[idx_train, :], y[idx_train,:], mask[idx_train]
+
+    return test_inpt, test_y, test_mask, \
+           train_inpt, train_y, train_mask
+
 
 def create_violation_mask(violation_idx, T):
     """
@@ -150,25 +162,33 @@ def create_violation_mask(violation_idx, T):
     return nonviolation_idx, mask
 
 
-def prepare_data_for_cv(inpt, y, session, session_fold_lookup_table, fold):
+# def prepare_data_for_cv(inpt, y, session, session_fold_lookup_table, fold):
+def prepare_data_for_cv(inpt, y, session_fold_lookup_table):
     '''
     :return:
     '''
-
+    # my modifications below
     violation_idx = np.where(y == -1)[0]
     nonviolation_idx, nonviolation_mask = create_violation_mask(
         violation_idx, inpt.shape[0])
     # Load train and test data for session
-    test_inpt, test_y, test_nonviolation_mask, this_test_session, \
-    train_inpt, train_y, train_nonviolation_mask, this_train_session = \
-        get_train_test_dta(
-            inpt, y, nonviolation_mask, session, session_fold_lookup_table,
-            fold)
+    # test_inpt, test_y, test_nonviolation_mask, this_test_session, \
+    # train_inpt, train_y, train_nonviolation_mask, this_train_session = \
+        # get_train_test_dta(
+        #     inpt, y, nonviolation_mask, session, session_fold_lookup_table,
+        #     fold)
+    test_inpt, test_y, test_nonviolation_mask, \
+    train_inpt, train_y, train_nonviolation_mask = \
+        get_train_test_dta_trials(
+            inpt, y, nonviolation_mask, session_fold_lookup_table
+        )
     M = train_inpt.shape[1]
     n_test = np.sum(test_nonviolation_mask == 1)
     n_train = np.sum(train_nonviolation_mask == 1)
-    return test_inpt, test_y, test_nonviolation_mask, this_test_session, \
-           train_inpt, train_y, train_nonviolation_mask, this_train_session, \
+    # return test_inpt, test_y, test_nonviolation_mask, this_test_session, \
+    #        train_inpt, train_y, train_nonviolation_mask, this_train_session, \
+    return test_inpt, test_y, test_nonviolation_mask, \
+           train_inpt, train_y, train_nonviolation_mask, \
            M, n_test, n_train
 
 
@@ -223,12 +243,18 @@ def calculate_lapse_test_loglikelihood(lapse_file, test_y, test_inpt, M,
     return loglikelihood_test
 
 
-def return_lapse_nll(inpt, y, session, session_fold_lookup_table, fold,
+# def return_lapse_nll(inpt, y, session, session_fold_lookup_table, fold,
+#                      num_lapse_params, results_dir_glm_lapse, C):
+    # test_inpt, test_y, test_nonviolation_mask, this_test_session, \
+    # train_inpt, train_y, train_nonviolation_mask, this_train_session, M, \
+    # n_test, n_train = prepare_data_for_cv(
+    # inpt, y, session, session_fold_lookup_table, fold)
+def return_lapse_nll(inpt, y, trial_fold_lookup_table, fold,
                      num_lapse_params, results_dir_glm_lapse, C):
-    test_inpt, test_y, test_nonviolation_mask, this_test_session, \
-    train_inpt, train_y, train_nonviolation_mask, this_train_session, M, \
+    test_inpt, test_y, test_nonviolation_mask, \
+    train_inpt, train_y, train_nonviolation_mask, M, \
     n_test, n_train = prepare_data_for_cv(
-        inpt, y, session, session_fold_lookup_table, fold)
+        inpt, y, trial_fold_lookup_table)
     ll0 = calculate_baseline_test_ll(train_y[train_nonviolation_mask == 1, :],
                                      test_y[test_nonviolation_mask == 1, :], C)
     ll0_train = calculate_baseline_test_ll(
@@ -301,7 +327,9 @@ def calculate_glm_hmm_test_loglikelihood(glm_hmm_dir, test_datas, test_inputs,
            file_ordering_by_train
 
 
-def return_glmhmm_nll(inpt, y, session, session_fold_lookup_table, fold, K, D,
+# def return_glmhmm_nll(inpt, y, session, session_fold_lookup_table, fold, K, D,
+#                       C, results_dir_glm_hmm):
+def return_glmhmm_nll(inpt, y, trial_fold_lookup_table, fold, K, D,
                       C, results_dir_glm_hmm):
     '''
     For a given fold, return NLL for both train and test datasets for
@@ -319,10 +347,13 @@ def return_glmhmm_nll(inpt, y, session, session_fold_lookup_table, fold, K, D,
     :param results_dir_glm_hmm:
     :return:
     '''
-    test_inpt, test_y, test_nonviolation_mask, this_test_session, \
-    train_inpt, train_y, train_nonviolation_mask, this_train_session, M, \
+    # test_inpt, test_y, test_nonviolation_mask, this_test_session, \
+    # train_inpt, train_y, train_nonviolation_mask, this_train_session, M, \
+    test_inpt, test_y, test_nonviolation_mask, \
+    train_inpt, train_y, train_nonviolation_mask, M, \
     n_test, n_train = prepare_data_for_cv(
-        inpt, y, session, session_fold_lookup_table, fold)
+        # inpt, y, session, session_fold_lookup_table, fold)
+        inpt, y, trial_fold_lookup_table)
     ll0 = calculate_baseline_test_ll(train_y[train_nonviolation_mask == 1, :],
                                      test_y[test_nonviolation_mask == 1, :], C)
     ll0_train = calculate_baseline_test_ll(
@@ -334,16 +365,18 @@ def return_glmhmm_nll(inpt, y, session, session_fold_lookup_table, fold, K, D,
     test_y[test_nonviolation_mask == 0, :] = 1
     train_y[train_nonviolation_mask == 0, :] = 1
     # For GLM-HMM, need to partition data by session
-    test_inputs, test_datas, test_nonviolation_masks = \
-        partition_data_by_session(
-            test_inpt, test_y,
-            np.expand_dims(test_nonviolation_mask, axis=1),
-            this_test_session)
-    train_inputs, train_datas, train_nonviolation_masks = \
-        partition_data_by_session(
-            train_inpt, train_y,
-            np.expand_dims(train_nonviolation_mask, axis=1),
-            this_train_session)
+    # test_inputs, test_datas, test_nonviolation_masks = \
+    #     partition_data_by_session(
+    #         test_inpt, test_y,
+    #         np.expand_dims(test_nonviolation_mask, axis=1),
+    #         this_test_session)
+    # train_inputs, train_datas, train_nonviolation_masks = \
+    #     partition_data_by_session(
+    #         train_inpt, train_y,
+    #         np.expand_dims(train_nonviolation_mask, axis=1),
+    #         this_train_session)
+    test_inputs, test_datas, test_nonviolation_masks = test_inpt, test_y, np.expand_dims(test_nonviolation_mask, axis=1)
+    train_inputs, train_datas, train_nonviolation_masks = train_inpt, train_y, np.expand_dims(train_nonviolation_mask, axis=1)
     dir_to_check = results_dir_glm_hmm + '/GLM_HMM_K_' + str(
         K) + '/fold_' + str(fold) + '/'
     test_ll_vals_across_iters, init_ordering_by_train, \
@@ -521,3 +554,11 @@ def get_marginal_posterior(inputs, datas, masks, hmm_params, K, permutation):
     posterior_probs = np.concatenate(expectations, axis=0)
     posterior_probs = posterior_probs[:, permutation]
     return posterior_probs
+
+# update the feature list based on features to remove
+def update_features(features_to_remove, all_labels):
+    # Filter out the features to remove
+    # features_to_keep = [label for label in all_labels if label not in features_to_remove]
+    feat_idxs_to_keep = [idx for idx, feat in enumerate(all_labels) if feat not in features_to_remove]
+    # features_to_keep = [all_labels[i] for i in feat_idxs_to_keep]
+    return feat_idxs_to_keep

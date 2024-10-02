@@ -212,3 +212,23 @@ def create_train_test_sessions(session, num_folds=5):
     session_fold_lookup_table = np.transpose(
         np.vstack([sess_id, shuffled_folds]))
     return session_fold_lookup_table
+
+def split_train_test(unnormalized_inpt, split_ratio=0.7): # do it for just one fold (one split) to start
+    total_rows = len(unnormalized_inpt) # total number of rows
+    split_index = int(np.ceil(total_rows * split_ratio)) # index to split at (round up for training)
+
+    # get indices for train and test
+    train_indices = np.arange(0,split_index)
+    test_indices = np.arange(split_index, total_rows)
+
+    # create labels for each one
+    train_labels = np.full(len(train_indices), 'train')
+    test_labels = np.full(len(test_indices), 'test')
+    
+    # create lookup table of indices paired with labels
+    all_indices = np.concatenate([train_indices, test_indices])
+    all_labels = np.concatenate([train_labels, test_labels])
+    
+    lookup_table = np.vstack([all_indices, all_labels]).T
+    
+    return lookup_table

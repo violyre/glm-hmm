@@ -21,7 +21,8 @@ all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe ang
                 'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
                 'prev_resp', 'prev_acc', 'bias']
 
-doing_feature_selection = True # change this flag if you are using this code to do feature selection or not
+doing_feature_selection = False # change this flag if you are using this code to do feature selection or not
+train_test_split = True # change this flag if you want to split train/test here
 
 # for manual feature selection
 features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
@@ -37,7 +38,7 @@ if 'bias' not in features_to_remove:
 
 if __name__ == '__main__':
     data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/'
-    num_folds = 5 # why 5 folds?
+    num_folds = 1 # why 5 folds?
 
     # # for use with glm fit for subjects separately 
     # container = np.load(data_dir + 'data_by_subj/subject_list.npz', allow_pickle=True)
@@ -64,6 +65,8 @@ if __name__ == '__main__':
         inpt = data[0]
         y = data[1]
         y = y.astype('int')
+        
+        trial_fold_lookup_table = load_session_fold_lookup(data_dir + group_str + '_all_subj_concat_trial_fold_lookup.npz')
 
         # # suggested optimization of above
         # subj_file = os.path.join(data_dir, f'{group_str}_all_subj_concat.npz')
@@ -76,7 +79,7 @@ if __name__ == '__main__':
 
         # remove features if needed
         inpt = inpt[:, feat_idxs_to_keep]
-        print(np.shape(inpt))
+        # print(np.shape(inpt))
 
         if doing_feature_selection:
             ll_vectors_allfolds = [] # store ll vectors of all folds
@@ -87,28 +90,20 @@ if __name__ == '__main__':
             if not os.path.exists(figure_directory):
                 os.makedirs(figure_directory)
 
-            # Subset to sessions of interest for fold
-            # sessions_to_keep = session_fold_lookup_table[np.where(
-            #     session_fold_lookup_table[:, 1] != fold), 0]
-            # idx_this_fold = [
-            #     str(sess) in sessions_to_keep and y[id, 0] != -1
-            #     for id, sess in enumerate(session)
-            # ]
-            # this_inpt, this_y, this_session = inpt[idx_this_fold, :], y[
-            #     idx_this_fold, :], session[idx_this_fold]
-
             idx_no_viol = np.where(y[:,0] != -1) # exclude any violation trials
-            this_inpt, this_y = inpt[idx_no_viol], y[idx_no_viol] # exclude any violation trials
-            # print(f'shape of y: {np.shape(y)} vs shape of this_y: {np.shape(this_y)}')
-            # print(f'shape of input: {np.shape(inpt)} vs shape of this_inpt: {np.shape(this_inpt)}')
-            
+            if train_test_split: 
+                trials_to_keep = np.where(trial_fold_lookup_table[:,1] == "train")[0] # indices in lookup table that correspond to "train"
+                idx_this_fold = [id for id in trials_to_keep if y[id,0] != -1]
+
+                this_inpt, this_y = inpt[idx_this_fold], y[idx_this_fold] 
+            else:
+                this_inpt, this_y = inpt[idx_no_viol], y[idx_no_viol] 
             assert len(np.unique(this_y)) == 2, "choice vector should only include 2 possible values"
             train_size = inpt.shape[0]
 
             # if not doing feature selection, just plot the regular glm with all features
             if not doing_feature_selection:
-                # M = this_inpt.shape[1]
-                M = inpt.shape[1]
+                M = this_inpt.shape[1]
                 loglikelihood_train_vector = []
 
                 for iter in tqdm(range(N_initializations), desc=f'Group {group}, Fold {fold}', unit='init'):  

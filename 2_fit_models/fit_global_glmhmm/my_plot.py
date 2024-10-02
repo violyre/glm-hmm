@@ -37,12 +37,6 @@ if __name__ == '__main__':
     if not os.path.exists(save_directory):
         os.makedirs(save_directory)
 
-    # labels_for_plot = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
-    #             'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
-    #             'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
-    #             'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
-    #             'prev_resp', 'prev_acc', 'bias']
-
     # cv_file = results_dir + "/cvbt_folds_model.npz"
     # cvbt_folds_model = load_cv_arr(cv_file)
     
