@@ -156,9 +156,8 @@ if __name__ == '__main__':
                 'Dist_stim_3', '3_to_probe_dist',
                 'min_dist', 'avg_dist'
             ]
-            # additional_features = [prev_choice, prev_accuracy]
-            # unnormalized_inpt = np.column_stack([data[col] for col in vars_to_keep] + additional_features)
-            unnormalized_inpt = np.column_stack([data[col] for col in vars_to_keep] + prev_choice)
+            additional_features = [prev_choice]
+            unnormalized_inpt = np.column_stack([data[col] for col in vars_to_keep] + additional_features)
             # print(unnormalized_inpt)
 
             y = np.expand_dims(data['Response'], axis=1) # don't need to remap choice vals for our task (?)
@@ -217,12 +216,12 @@ if __name__ == '__main__':
         normalized_inpt = np.copy(master_inpt) 
         # print(f'size normalized_inpt before scale: {np.shape(normalized_inpt)}')
         print(f'means before scaling: {normalized_inpt.mean(axis=0)}, sds before scaling: {normalized_inpt.std(axis=0)}')
-        normalized_inpt[:, :-2] = preprocessing.scale(normalized_inpt[:, :-2]) # scale all features except the last two cols (prev choice and prev acc)
+        normalized_inpt[:, :-1] = preprocessing.scale(normalized_inpt[:, :-1]) # scale all features except prev choice
         # print(f'size normalized_inpt after scale: {np.shape(normalized_inpt)}')
         print(f'means after scaling: {normalized_inpt.mean(axis=0)}, sds after scaling: {normalized_inpt.std(axis=0)}')
 
         min_max_scaler = preprocessing.MinMaxScaler()
-        normalized_inpt[:, :-2] = min_max_scaler.fit_transform(normalized_inpt[:, :-2])
+        normalized_inpt[:, :-1] = min_max_scaler.fit_transform(normalized_inpt[:, :-1]) # scale all features except prev choice
         print(f'means after min max scaling: {normalized_inpt.mean(axis=0)}, sds after min max scaling: {normalized_inpt.std(axis=0)}')
 
         np.savez(processed_data_path + group_str + '_all_subj_concat.npz',
@@ -241,6 +240,12 @@ if __name__ == '__main__':
         #     master_correct)
         np.savez(processed_data_path + 'data_by_subj/' + group_str + '_final_subject_list.npz',
             final_subject_list) # ?
+        
+        # save the list of variables for labels for plot later
+        vars_to_keep.append('prev_resp')
+        vars_to_keep.append('bias')
+        with open(processed_data_path + 'labels_for_plot.json', 'w') as f:
+            json.dump(vars_to_keep, f)
         
         # json = json.dumps(final_subject_ids_dict)
         # f = open(processed_data_path + 'final_subject_ids_dict.json', "w")

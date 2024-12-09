@@ -9,12 +9,13 @@ import ssm.stats as stats
 
 
 class glm(object):
-    def __init__(self, M, C):
+    def __init__(self, M, C): # if doing lambda_reg, add , lambda_reg=0.01 here
         """
         @param C:  number of classes in the categorical observations
         """
         self.M = M
         self.C = C
+        # self.lambda_reg = lambda_reg
         # Parameters linking input to state distribution
         self.Wk = npr.randn(1, C - 1, M + 1)
 
@@ -27,7 +28,8 @@ class glm(object):
         self.Wk = value
     
     def log_prior(self):
-        return 0
+        return 0 # their original line
+        # return -0.5 * self.lambda_reg * np.sum(self.Wk ** 2) # L2 regularization (my addition)
 
     # Calculate time dependent logits - output is matrix of size Tx1xC
     # Input is size TxM

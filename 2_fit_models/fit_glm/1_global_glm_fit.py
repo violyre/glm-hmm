@@ -3,6 +3,7 @@
 import autograd.numpy as np
 import autograd.numpy.random as npr
 import os
+import pandas as pd
 from glm_utils import load_session_fold_lookup, load_data, fit_glm, \
     plot_input_vectors, append_zeros, \
     plot_feature_selection_ll, \
@@ -10,40 +11,27 @@ from glm_utils import load_session_fold_lookup, load_data, fit_glm, \
 from tqdm import tqdm # my addition
 import statistics # for variance
 import matplotlib.pyplot as plt
+import json
 
 C = 2  # number of output types/categories
 N_initializations = 10 # where does this come from?
 npr.seed(65)  # set seed in case of randomization
 
-all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
-                'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
-                'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
-                'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
-                'prev_resp', 'prev_acc', 'bias']
-
 doing_feature_selection = False # change this flag if you are using this code to do feature selection or not
-train_test_split = True # change this flag if you want to split train/test here
-
-# for manual feature selection
-features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
-                      'stim_2 X', 'stim_2 Y', 'stim_3 X', 'stim_3 Y']  # Update this list with features you want to remove
-
-# # Update features and labels based on removal
-feat_idxs_to_keep = update_features(features_to_remove, all_labels)
-labels_for_plot = [all_labels[i] for i in feat_idxs_to_keep]
-print(labels_for_plot)
-
-if 'bias' not in features_to_remove:
-    feat_idxs_to_keep = feat_idxs_to_keep[:-1] # remove last term so it doesn't cause an issue with input
+train_test_split = False # change this flag if you want to split train/test here
 
 if __name__ == '__main__':
     data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/'
-    num_folds = 1 # why 5 folds?
+    num_folds = 1 
 
     # # for use with glm fit for subjects separately 
     # container = np.load(data_dir + 'data_by_subj/subject_list.npz', allow_pickle=True)
     # data = [container[key] for key in container]
     # subject_list = data[0]
+
+    with open(data_dir + 'labels_for_plot.json', 'r') as f:
+        labels_for_plot = json.load(f)
+    print(labels_for_plot)
 
     # Create directory for results:
     results_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/results/global_fit/'
@@ -78,7 +66,7 @@ if __name__ == '__main__':
         #     data_dir + 'all_animals_concat_session_fold_lookup.npz')
 
         # remove features if needed
-        inpt = inpt[:, feat_idxs_to_keep]
+        # inpt = inpt[:, feat_idxs_to_keep]
         # print(np.shape(inpt))
 
         if doing_feature_selection:
@@ -196,8 +184,8 @@ if __name__ == '__main__':
 
         for group in range(1,4):
             group_str = f'{group:02d}' # which group we are currently looking at 
-            figure_directory = results_dir + 'GLM/' + group_str + '_fold_4' + '/' # take last fold
-            glm_vectors_file = figure_directory + 'variables_of_interest_iter_9' + '.npz' # take last iter
+            figure_directory = results_dir + 'GLM/' + group_str + '_fold_0' + '/' # take first fold
+            glm_vectors_file = figure_directory + 'variables_of_interest_iter_0' + '.npz' # take first iter
             container = np.load(glm_vectors_file)
             data = [container[key] for key in container]
             loglikelihood_train = data[0]

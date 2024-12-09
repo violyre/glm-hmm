@@ -121,7 +121,7 @@ def launch_glm_hmm_job(inpt, y, session, mask, session_fold_lookup_table, K, D,
 
 def fit_glm_hmm(datas, inputs, masks, K, D, M, C, N_em_iters,
                 transition_alpha, prior_sigma, global_fit,
-                params_for_initialization, save_title):
+                params_for_initialization, save_title): # , lambda_reg=0.01
     '''
     Instantiate and fit GLM-HMM model
     :param datas:
@@ -154,6 +154,7 @@ def fit_glm_hmm(datas, inputs, masks, K, D, M, C, N_em_iters,
         glm_vectors_with_noise = glm_vectors_repeated + np.random.normal(
             0, 0.2, glm_vectors_repeated.shape)
         this_hmm.observations.params = glm_vectors_with_noise
+        # this_hmm.observations.params = glm_vectors_repeated
     else:
         # Choice of prior
         this_hmm = ssm.HMM(K,
@@ -170,6 +171,7 @@ def fit_glm_hmm(datas, inputs, masks, K, D, M, C, N_em_iters,
         # Get log_prior of transitions:
     print("=== fitting GLM-HMM ========")
     sys.stdout.flush()
+
     # Fit this HMM and calculate marginal likelihood
     lls = this_hmm.fit(datas,
                        inputs=inputs,
