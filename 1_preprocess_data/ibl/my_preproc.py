@@ -24,6 +24,8 @@ if __name__ == '__main__':
 
     os.chdir(data_path) # search in correct directory
     final_subject_list_all = {} # empty dictionary to store all the subj from each group that we keep
+    orig_subj_list_len = {} # store length of original subject lists for each group to compare to final subject count
+    final_subj_list_len = {} #store length of final subject lists for each group to compare to original subject count 
 
     for group in range(1,4): # go through groups 1, 2, and 3 and save them separately
         group_str = f'{group:02d}'
@@ -39,26 +41,15 @@ if __name__ == '__main__':
             if filename.endswith("_trialdata.csv"):
                 match = pattern.search(filename)
                 if match:
-                    # group = match.group(1) # group number
-                    # subject = match.group(2) # ID number
-                    # chronicity = match.group(3) # chronicity -- ignoring this for now?
+                    # chronicity = match.group(2) # chronicity -- ignoring this for now?
                     subject = match.group(1) # ID number 
 
                     if subject not in subject_list:
                         subject_list.append(subject)
 
-                    # print(f'Identified filename: {filename}, subject {subject} for group 1')
-
-                    # file_path = os.path.join(data_path, filename) # full path to each CSV file
-                    # df = pd.read_csv(file_path) # read the CSV file 
-                    # subject_ids_dict[subject] = df # store it in the dataframe
-
                     subject_ids_dict[subject] = filename # store filename for subject
-                    # subject_ids_dict[subject].append(filename) # append filename -- only makes sense if there are multiple files per subject
-                    # subject_ids_dict[group][subject].append(filename)
-        # print(f'subject_list: {orig_subject_list}')
-        # print(f'subject_ids_dict: {subject_ids_dict[subject]}, subject {subject}')
         np.savez('partially_processed/subject_list_' + group_str + '.npz', subject_list)
+        orig_subj_list_len[group] = len(subject_list)
 
         # Create directories for saving data:
         processed_data_path = data_path + "data_for_cluster/"
@@ -70,33 +61,11 @@ if __name__ == '__main__':
 
         wm_only = True # change to False if you want to store all trial types, including CTL
 
-        # make sure each subject has responses for at least 80% of trials
-        # subject_list = [] # store only subject IDs that have enough trials 
-        # for subject in orig_subject_list:
-        #     filename = subject_ids_dict[subject]
-        #     data = pd.read_csv(os.path.join(data_path, filename))
-        #     if wm_only == True:
-        #         data = data.loc[data['Condition']=='WM'] # restrict data to WM only 
-
-        #     if data['ProbeDisp.RESP'].isna().sum()/len(data['ProbeDisp.RESP']) > 0.2: # if more than 20% of trials are nan
-        #         print(f'Insufficient trials for subject {subject}. Excluding {subject_ids_dict[subject]} from list.')
-        #     else:
-        #         subject_list.append(subject) # if it has enough trials, append it to the new list
-        # # subject_list = [subject for subject in subject_list 
-        # #                 if pd.read_csv(os.path.join(data_path, subject_ids_dict[subject]))['ProbeDisp.RESP'].isna().sum() / 
-        # #                 len(pd.read_csv(os.path.join(data_path, subject_ids_dict[subject]))['ProbeDisp.RESP']) <= 0.2]
-        # num_subjects = len(subject_list)
-        # print(f'Number of subjects with sufficient number of trials: {num_subjects}')
-        # print(f'Subject list: {subject_list}')
-
         # Identify idx in master array where each subject's data starts and ends:
         subject_start_idx = {}
         subject_end_idx = {}
 
         final_subject_ids_dict = defaultdict(list) # should I do {}?
-        # WORKHORSE: iterate through each animal and each animal's set of eids;
-        # obtain unnormalized data.  Write out each animal's data and then also
-        # write to master array
 
         if not os.path.exists(data_path + '/stim_key_normalized.csv'): # if we have not already saved a normalized version of the key
             stim_key = pd.read_csv(os.path.join(data_path, 'StimulusLocationInfo.csv')) # get 'key' of stim position coordinates in % form
@@ -104,16 +73,18 @@ if __name__ == '__main__':
 
             stim_key.iloc[:,1] = stim_key.iloc[:,1].str.strip('%').astype(float)/100 # convert X to decimal from percentage
             stim_key.iloc[:,2] = stim_key.iloc[:,2].str.strip('%').astype(float)/100 # convert Y to decimal from percentage
-            stim_key['XPos'] = (2 * stim_key['XPos']) - 1 # map X over range [-1, 1]
-            stim_key['YPos'] = (2 * stim_key['YPos']) - 1 # map Y over range [-1, 1]
 
-            #stim_key["XY"] = stim_key['XPos'] * stim_key['YPos']
-            stim_key["Dist"] = np.sqrt(stim_key['XPos']**2 + stim_key['YPos']**2)
-            stim_key["Angle"] = np.arctan2(stim_key['YPos'],stim_key['XPos'])
+            # Map X and Y over the screen dimensions
+            stim_key['XPos'] = (640 * stim_key['XPos']) # absolute x
+            stim_key['YPos'] = (480 * stim_key['YPos']) # absolute y
+            
+            # recenter X and Y at (0,0)
+            stim_key['XPos'] = stim_key['XPos'] - 320 # 320 is half of 640
+            stim_key['YPos'] = stim_key['YPos'] - 240 # 240 is half of 480
 
-            # normalize
-            stim_key["Dist_Norm"] = (np.copy(stim_key["Dist"]) - 0) / (np.sqrt(2) - 0)
-            stim_key["Angle_Norm"] = (np.copy(stim_key["Angle"]) - -math.pi) / (math.pi - -math.pi)
+            stim_key["Dist"] = np.sqrt(stim_key['XPos']**2 + stim_key['YPos']**2) # absolute (unnormalized) distance from center
+            # stim_key["Angle"] = np.arctan2(stim_key['YPos'], stim_key['XPos']) # angle calculated using absolute (unnormalized) distances
+            
             # print(f'stim_key: {stim_key}')
 
             pd.DataFrame(stim_key).to_csv(data_path + '/stim_key_normalized.csv') # save as csv
@@ -122,16 +93,10 @@ if __name__ == '__main__':
         final_subject_list = [] # list to store IDs of only the subjects we end up continuing with (sufficient trials)
 
         for z, subject in enumerate(subject_list):
-            # sess_counter = 0
-            ###
-            # for filename in subject_ids_dict[subject].values():
             filename = subject_ids_dict[subject]
-            # print(f'subject_ids_dict[{subject}]: {subject_ids_dict[subject]}')
             print(f'filename: {filename}')
 
             # below is equivalent to "get_all_unnormalized_data_this_session"
-            # create unnormalized input with first col stim_probe, next three cols x3 stim_1, stim_2, stim_3 (X, Y, and XY)
-            # then past choice, then past reward
             data = pd.read_csv(os.path.join(data_path, filename))
             data = data.drop('Unnamed: 0', axis=1) # remove first column that just has the indices (it will make it again anyway)
 
@@ -141,46 +106,27 @@ if __name__ == '__main__':
             resp = data['ProbeDisp.RESP'] - 7 # to encode as 0 and 1 instead of 7 and 8
             # print(np.unique(resp))       
             resp = resp.fillna(-1) # fill nans with -1 for violation, otherwise uncomment the following
-            # for idx, val in enumerate(resp):
-            #     if np.isnan(val):
-                    # # fill in incorrect choice for any nans
-                    # if condition[idx] == 'CTL': 
-                    #     resp[idx] = 1
-                    # else: # if WM, fill in nan with incorrect response
-                    #     if data['ProbeDisp.CRESP'].iloc[idx] - 7 == 0: 
-                    #         resp[idx] = 1 
-                    #     else:
-                    #         resp[idx] = 0
-                    # # resp[idx] = lambda idx: 1 if condition[idx] == 'CTL' # unfinished list comprehension attempt
-            # print(np.unique(resp))
-            # print(data.head())
-
-            # input variables:
-            accuracy = data['TrialAccuracy']
-
             data['Response'] = resp # store modified response column with 1s and 0s and empty spots filled in
-
-            # data['Prev_Response'] = resp.shift(1).fillna(0) # previous trial's response
-            # data['Prev_Accuracy'] = data['TrialAccuracy'].shift(1).fillna(0) # previous trial's accuracy
             prev_choice, locs_mapping = create_previous_choice_vector(resp)
-            # modified create_wsls_covariate():
-            prev_accuracy = np.hstack([np.array(accuracy[0]), accuracy])[:-1]
-            # Now need to go through and update previous reward to correspond to
-            # same trial as previous choice:
-            for i, loc in enumerate(locs_mapping[:, 0]):
-                nearest_loc = locs_mapping[i, 1]
-                prev_accuracy[loc] = prev_accuracy[nearest_loc]
-
             del resp # delete it so I don't accidentally try to use it after
 
-            # get normalized coordinates from stimulus positions using key and save as new columns in dataframe
+            # get normalized coordinates, distances, angles from stimulus positions using key and save as new columns in dataframe
             data = pd.merge(data, stim_key.add_suffix('_stim_probe'), left_on='Stimulus_probe', right_on='Stimulus_stim_probe', how='left')
             data = pd.merge(data, stim_key.add_suffix('_stim_1'), left_on='Stimulus_dot1', right_on='Stimulus_stim_1', how='left')
             data = pd.merge(data, stim_key.add_suffix('_stim_2'), left_on='Stimulus_dot2', right_on='Stimulus_stim_2', how='left')
             data = pd.merge(data, stim_key.add_suffix('_stim_3'), left_on='Stimulus_dot3', right_on='Stimulus_stim_3', how='left')
             data = data.drop(columns=['Stimulus_stim_probe', 'Stimulus_stim_1', 'Stimulus_stim_2', 'Stimulus_stim_3'])
+
+            # distances between dots and probe
+            data['1_to_probe_dist'] = np.sqrt((data['XPos_stim_1']-data['XPos_stim_probe'])**2 + (data['YPos_stim_1']-data['YPos_stim_probe'])**2)
+            data['2_to_probe_dist'] = np.sqrt((data['XPos_stim_2']-data['XPos_stim_probe'])**2 + (data['YPos_stim_2']-data['YPos_stim_probe'])**2)
+            data['3_to_probe_dist'] = np.sqrt((data['XPos_stim_3']-data['XPos_stim_probe'])**2 + (data['YPos_stim_3']-data['YPos_stim_probe'])**2)
+
+            data['min_dist'] = data[['1_to_probe_dist', '2_to_probe_dist', '3_to_probe_dist']].min(axis=1) # yes biased when smaller
+            data['avg_dist'] = data[['1_to_probe_dist', '2_to_probe_dist', '3_to_probe_dist']].mean(axis=1) # no biased when larger?
+
+            # prev choice and prev accuracy
             data['prev_resp'] = prev_choice
-            data['prev_acc'] = prev_accuracy
             # print(data.head())
 
             pd.DataFrame(data).to_csv(data_path + '/partially_processed/preproc_' + filename) # save data with the new columns added and blanks filled in
@@ -192,7 +138,7 @@ if __name__ == '__main__':
                 data = data.loc[data['Condition']=='WM']
                 # print(f'WM only: {data.head()}')
                 prev_choice = prev_choice[np.where(data['Condition']=='WM')]
-                prev_accuracy = prev_accuracy[np.where(data['Condition']=='WM')]
+                # prev_accuracy = prev_accuracy[np.where(data['Condition']=='WM')]
 
             # check to see if there are sufficient trials in this subject's session
             if data['ProbeDisp.RESP'].isna().sum()/len(data['ProbeDisp.RESP']) > 0.2: # if more than 20% of trials are nan
@@ -201,40 +147,28 @@ if __name__ == '__main__':
             else:
                 final_subject_list.append(subject) # if it has enough trials, append it to the new list
 
-            # create_design_mat:
-            unnormalized_inpt = np.zeros((len(data['Condition']), 18)) # change number of weights here
-
-            unnormalized_inpt[:,0] = data['XPos_stim_probe']
-            unnormalized_inpt[:,1] = data['YPos_stim_probe']
-            unnormalized_inpt[:,2] = data['Dist_Norm_stim_probe']
-            unnormalized_inpt[:,3] = data['Angle_Norm_stim_probe']
-
-            unnormalized_inpt[:,4] = data['XPos_stim_1']
-            unnormalized_inpt[:,5] = data['YPos_stim_1']
-            unnormalized_inpt[:,6] = data['Dist_Norm_stim_1']
-            unnormalized_inpt[:,7] = data['Angle_Norm_stim_1']
-
-            unnormalized_inpt[:,8] = data['XPos_stim_2']
-            unnormalized_inpt[:,9] = data['YPos_stim_2']
-            unnormalized_inpt[:,10] = data['Dist_Norm_stim_2']
-            unnormalized_inpt[:,11] = data['Angle_Norm_stim_2']
-
-            unnormalized_inpt[:,12] = data['XPos_stim_3']
-            unnormalized_inpt[:,13] = data['YPos_stim_3']
-            unnormalized_inpt[:,14] = data['Dist_Norm_stim_3']
-            unnormalized_inpt[:,15] = data['Angle_Norm_stim_3']
-
-            unnormalized_inpt[:,16] = prev_choice
-            unnormalized_inpt[:,17] = prev_accuracy
+            # create_design_mat:            
+            unnormalized_inpt = []
+            vars_to_keep = [ # save unnormalized distances and angles here so I can scale them all together later
+                'Dist_stim_probe', 
+                'Dist_stim_1', '1_to_probe_dist',
+                'Dist_stim_2', '2_to_probe_dist',
+                'Dist_stim_3', '3_to_probe_dist',
+                'min_dist', 'avg_dist'
+            ]
+            # additional_features = [prev_choice, prev_accuracy]
+            # unnormalized_inpt = np.column_stack([data[col] for col in vars_to_keep] + additional_features)
+            unnormalized_inpt = np.column_stack([data[col] for col in vars_to_keep] + prev_choice)
+            # print(unnormalized_inpt)
 
             y = np.expand_dims(data['Response'], axis=1) # don't need to remap choice vals for our task (?)
-            correct = np.expand_dims(prev_accuracy, axis=1)
+            # correct = np.expand_dims(prev_accuracy, axis=1)
             
             # if num_viols_50 < 10 ? what filter should I use here?
             subj_unnormalized_inpt = np.copy(unnormalized_inpt)
             subj_y = np.copy(y)
             # subj_session = 1 # not sure if I can delete this later
-            subj_correct = np.copy(correct)
+            # subj_correct = np.copy(correct)
 
             final_subject_ids_dict[subject].append(filename)
 
@@ -243,8 +177,8 @@ if __name__ == '__main__':
             subj_trial_fold_lookup = split_train_test(subj_unnormalized_inpt, split_ratio=0.7)
             np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_trial_fold_lookup.npz', subj_trial_fold_lookup)
             
-            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_correct.npz', subj_correct)
-            assert subj_correct.shape[0] == subj_y.shape[0] # ?
+            # np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_correct.npz', subj_correct)
+            # assert subj_correct.shape[0] == subj_y.shape[0] # ?
 
             # now create or append data to master array across all subjects:
             if z == 0:
@@ -254,7 +188,7 @@ if __name__ == '__main__':
                 master_y = np.copy(subj_y)
                 # master_session = subj_session
                 master_trial_fold_lookup_table = subj_trial_fold_lookup
-                master_correct = np.copy(subj_correct)
+                # master_correct = np.copy(subj_correct)
             else:
                 subject_start_idx[subject] = master_inpt.shape[0]
                 master_inpt = np.vstack((master_inpt, subj_unnormalized_inpt))
@@ -263,7 +197,7 @@ if __name__ == '__main__':
                 # master_session = np.concatenate((master_session, subj_session))
                 master_trial_fold_lookup_table = np.vstack(
                     (master_trial_fold_lookup_table, subj_trial_fold_lookup))
-                master_correct = np.vstack((master_correct, subj_correct))
+                # master_correct = np.vstack((master_correct, subj_correct))
             
         # num_subjects = len(final_subject_list)
 
@@ -271,18 +205,26 @@ if __name__ == '__main__':
         # write out data from across subjects
         assert np.shape(master_inpt)[0] == np.shape(master_y)[
             0], "inpt and y not same length"
-        assert np.shape(master_correct)[0] == np.shape(master_y)[
-            0], "correct and y not same length"
+        # assert np.shape(master_correct)[0] == np.shape(master_y)[
+        #     0], "correct and y not same length"
         assert len(master_inpt) == \
            np.shape(master_trial_fold_lookup_table)[
                0], "number of total trials and trial fold lookup don't " \
                    "match"
         # assert len(subject_list) == num_subjects, f"{num_subjects} subjects in group 1" # not sure what the point of doing this for us is
 
-        normalized_inpt = np.copy(master_inpt) # note that in my edits, the unnormalized version is also normalized
+        # normalization happens here
+        normalized_inpt = np.copy(master_inpt) 
         # print(f'size normalized_inpt before scale: {np.shape(normalized_inpt)}')
-        # normalized_inpt[:, 0] = preprocessing.scale(normalized_inpt[:, 0]) # ?
+        print(f'means before scaling: {normalized_inpt.mean(axis=0)}, sds before scaling: {normalized_inpt.std(axis=0)}')
+        normalized_inpt[:, :-2] = preprocessing.scale(normalized_inpt[:, :-2]) # scale all features except the last two cols (prev choice and prev acc)
         # print(f'size normalized_inpt after scale: {np.shape(normalized_inpt)}')
+        print(f'means after scaling: {normalized_inpt.mean(axis=0)}, sds after scaling: {normalized_inpt.std(axis=0)}')
+
+        min_max_scaler = preprocessing.MinMaxScaler()
+        normalized_inpt[:, :-2] = min_max_scaler.fit_transform(normalized_inpt[:, :-2])
+        print(f'means after min max scaling: {normalized_inpt.mean(axis=0)}, sds after min max scaling: {normalized_inpt.std(axis=0)}')
+
         np.savez(processed_data_path + group_str + '_all_subj_concat.npz',
             normalized_inpt,
             master_y)
@@ -295,8 +237,8 @@ if __name__ == '__main__':
             processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.npz',
             master_trial_fold_lookup_table)
         pd.DataFrame(master_trial_fold_lookup_table).to_csv(processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.csv') # save as csv for readability
-        np.savez(processed_data_path + group_str + '_all_subj_concat_correct.npz',
-            master_correct)
+        # np.savez(processed_data_path + group_str + '_all_subj_concat_correct.npz',
+        #     master_correct)
         np.savez(processed_data_path + 'data_by_subj/' + group_str + '_final_subject_list.npz',
             final_subject_list) # ?
         
@@ -326,6 +268,12 @@ if __name__ == '__main__':
         np.savez(data_path + 'response_times/data_by_subj/' + group_str + '_' + subject + '.npz', reaction_time)
 
         final_subject_list_all[group] = [subj for subj in final_subject_list]
+        final_subj_list_len[group] = len(final_subject_list_all[group]) # store length of final subject list for this group
+    
+    print(f'Group {1}: {final_subj_list_len[1]} of {orig_subj_list_len[1]} subjects, {orig_subj_list_len[1]-final_subj_list_len[1]} removed, {final_subj_list_len[1]/orig_subj_list_len[1]*100}% kept')
+    print(f'Group {2}: {final_subj_list_len[2]} of {orig_subj_list_len[2]} subjects, {orig_subj_list_len[2]-final_subj_list_len[2]} removed, {final_subj_list_len[2]/orig_subj_list_len[2]*100}% kept')
+    print(f'Group {3}: {final_subj_list_len[3]} of {orig_subj_list_len[3]} subjects, {orig_subj_list_len[3]-final_subj_list_len[3]} removed, {final_subj_list_len[3]/orig_subj_list_len[3]*100}% kept')
+
     print(final_subject_list_all)
     # save list of all final subjects as dictionary with groups: subj ids
     json = json.dumps(final_subject_list_all)
