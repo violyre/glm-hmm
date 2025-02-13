@@ -73,6 +73,6 @@ if __name__ == '__main__':
                         rotation=90,
                         fontsize=15)
                 # fig.suptitle("GLM Weights: " + title, y=0.99, fontsize=14)
-                # fig.savefig(figure_directory + 'glm_weights_' + save_title + '.png')
+                # fig.savefig(figure_directory + 'glm_weights_' + group_str + '_' + subj + '.png')
 
                 fig.show() # my addition

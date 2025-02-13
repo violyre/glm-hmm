@@ -18,7 +18,7 @@ if __name__ == '__main__':
     
     for group in range(1,4): # iterate through groups 1-3 
         group_str = f'{group:02d}'
-        K = 2
+        K = 3 # number of states
         best_params = save_directory + 'best_params_' + group_str + '_K_' + str(K) + '.npz'
 
         container = np.load(best_params, allow_pickle=True)

@@ -12,7 +12,7 @@ D = 1  # data (observations) dimension
 C = 2  # number of output types/categories
 N_em_iters = 300  # number of EM iterations
 
-K_vals = [2] #[2, 3, 4, 5] # number of states 
+K_vals = [2, 3] #[2, 3, 4, 5] # number of states 
 num_folds = 5
 N_initializations = 20
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         global_fit = True
         # perform mle => set transition_alpha to 1
         transition_alpha = 1
-        prior_sigma = 1
+        prior_sigma = 1 # originally set as 100
 
         cluster_arr = []
         for K in K_vals:

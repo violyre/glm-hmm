@@ -38,8 +38,8 @@ if __name__ == '__main__':
 
     for group in range(1,4): # iterate through groups 1-3 
         group_str = f'{group:02d}'
-        for K in range(2,3): #range(2,6):
-            raw_file = results_dir + 'GLM_HMM_K_2/' + group_str + '_fold_0/iter_0/glm_hmm_raw_parameters_itr_0.npz'
+        for K in range(3,4): #range(2,6):
+            raw_file = results_dir + 'GLM_HMM_K_' + str(K) + '/' + group_str + '_fold_0/iter_0/glm_hmm_raw_parameters_itr_0.npz'
             # raw_file = raw_file_K2
             container = np.load(raw_file, allow_pickle=True)
             data = [container[key] for key in container]
