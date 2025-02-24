@@ -93,10 +93,10 @@ if __name__ == '__main__':
             stim_key = pd.read_csv(os.path.join(data_path, 'stim_key_normalized.csv')) # load the normalized vers        
         final_subject_list = [] # list to store IDs of only the subjects we end up continuing with (sufficient trials)
 
-        master_inpt = []
-        master_y = []
-        master_trial_fold_lookup_table = []
-        subject_tags_all = []
+        # master_inpt = []
+        # master_y = []
+        # master_trial_fold_lookup_table = []
+        # subject_tags_all = []
 
         for z, subject in enumerate(subject_list):
             filename = subject_ids_dict[subject]
@@ -179,123 +179,123 @@ if __name__ == '__main__':
 
             # write out subject's unnormalized data matrix:
             np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_unnormalized.npz', subj_unnormalized_inpt, subj_y)
-            subj_trial_fold_lookup = split_train_test(subj_unnormalized_inpt, split_ratio=0.7)
-            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_trial_fold_lookup.npz', subj_trial_fold_lookup)
+    #         subj_trial_fold_lookup = split_train_test(subj_unnormalized_inpt, split_ratio=0.7)
+    #         np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_trial_fold_lookup.npz', subj_trial_fold_lookup)
             
-            # Get train/test indices
-            train_indices = subj_trial_fold_lookup[subj_trial_fold_lookup[:, 1] == 'train', 0].astype(int)
-            test_indices = subj_trial_fold_lookup[subj_trial_fold_lookup[:, 1] == 'test', 0].astype(int)
+    #         # Get train/test indices
+    #         train_indices = subj_trial_fold_lookup[subj_trial_fold_lookup[:, 1] == 'train', 0].astype(int)
+    #         test_indices = subj_trial_fold_lookup[subj_trial_fold_lookup[:, 1] == 'test', 0].astype(int)
 
-            # Extract features and normalize based on train data stats
-            scaler = preprocessing.StandardScaler()
-            subj_features = subj_unnormalized_inpt[:, :-1]
-            subj_features[train_indices] = scaler.fit_transform(subj_features[train_indices])  # Normalize using training stats
-            subj_features[test_indices] = scaler.transform(subj_features[test_indices])  # Apply same transformation
+    #         # Extract features and normalize based on train data stats
+    #         scaler = preprocessing.StandardScaler()
+    #         subj_features = subj_unnormalized_inpt[:, :-1]
+    #         subj_features[train_indices] = scaler.fit_transform(subj_features[train_indices])  # Normalize using training stats
+    #         subj_features[test_indices] = scaler.transform(subj_features[test_indices])  # Apply same transformation
 
-            # Reconstruct full normalized input
-            subj_normalized_inpt = np.copy(subj_unnormalized_inpt)
-            subj_normalized_inpt[:, :-1] = subj_features
+    #         # Reconstruct full normalized input
+    #         subj_normalized_inpt = np.copy(subj_unnormalized_inpt)
+    #         subj_normalized_inpt[:, :-1] = subj_features
 
-            # Append to master dataset
-            subject_tags = np.full(len(subj_unnormalized_inpt), subject)
-            subject_start_idx[subject] = len(master_inpt)
-            master_inpt.append(subj_normalized_inpt)
-            master_y.append(subj_y)
-            master_trial_fold_lookup_table.append(subj_trial_fold_lookup)
-            subject_tags_all.append(subject_tags)
-            subject_end_idx[subject] = len(master_inpt) - 1
+    #         # Append to master dataset
+    #         subject_tags = np.full(len(subj_unnormalized_inpt), subject)
+    #         subject_start_idx[subject] = len(master_inpt)
+    #         master_inpt.append(subj_normalized_inpt)
+    #         master_y.append(subj_y)
+    #         master_trial_fold_lookup_table.append(subj_trial_fold_lookup)
+    #         subject_tags_all.append(subject_tags)
+    #         subject_end_idx[subject] = len(master_inpt) - 1
 
-        # Convert lists to numpy arrays
-        master_inpt = np.vstack(master_inpt)
-        master_y = np.vstack(master_y)
-        master_trial_fold_lookup_table = np.vstack(master_trial_fold_lookup_table)
-        subject_tags_all = np.concatenate(subject_tags_all)
+    #     # Convert lists to numpy arrays
+    #     master_inpt = np.vstack(master_inpt)
+    #     master_y = np.vstack(master_y)
+    #     master_trial_fold_lookup_table = np.vstack(master_trial_fold_lookup_table)
+    #     subject_tags_all = np.concatenate(subject_tags_all)
 
-        # Save everything as a single file
-        np.savez(os.path.join(processed_data_path, f'{group_str}_all_subj_concat.npz'), master_inpt, master_y)
-        np.savez(os.path.join(processed_data_path, f'{group_str}_all_subj_concat_trial_fold_lookup.npz'), master_trial_fold_lookup_table)
-        np.savez(os.path.join(processed_data_path, f'{group_str}_all_subj_tags.npz'), subject_tags_all)
+    #     # Save everything as a single file
+    #     np.savez(os.path.join(processed_data_path, f'{group_str}_all_subj_concat.npz'), master_inpt, master_y)
+    #     np.savez(os.path.join(processed_data_path, f'{group_str}_all_subj_concat_trial_fold_lookup.npz'), master_trial_fold_lookup_table)
+    #     np.savez(os.path.join(processed_data_path, f'{group_str}_all_subj_tags.npz'), subject_tags_all)
 
-        # Also save as CSV for readability
-        pd.DataFrame(master_inpt).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_concat.csv'))
-        pd.DataFrame(master_y).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_concat_y.csv'))
-        pd.DataFrame(master_trial_fold_lookup_table).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_concat_trial_fold_lookup.csv'))
-        pd.DataFrame(subject_tags_all).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_tags.csv'))
+    #     # Also save as CSV for readability
+    #     pd.DataFrame(master_inpt).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_concat.csv'))
+    #     pd.DataFrame(master_y).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_concat_y.csv'))
+    #     pd.DataFrame(master_trial_fold_lookup_table).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_concat_trial_fold_lookup.csv'))
+    #     pd.DataFrame(subject_tags_all).to_csv(os.path.join(processed_data_path, f'{group_str}_all_subj_tags.csv'))
 
-            # # np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_correct.npz', subj_correct)
-            # # assert subj_correct.shape[0] == subj_y.shape[0] # ?
+    #         # # np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_correct.npz', subj_correct)
+    #         # # assert subj_correct.shape[0] == subj_y.shape[0] # ?
 
-            # # subject_tags = np.copy(data['Subject'])
-            # subject_tags = np.full(subj_unnormalized_inpt.shape[0], subject) # create a column of subject IDs to add to the data matrix
+    #         # # subject_tags = np.copy(data['Subject'])
+    #         # subject_tags = np.full(subj_unnormalized_inpt.shape[0], subject) # create a column of subject IDs to add to the data matrix
 
-            # subj_normalized_inpt = np.copy(subj_unnormalized_inpt) # copy the unnormalized data matrix to the normalized one
-            # subj_normalized_inpt[:, :-1] = preprocessing.scale(subj_normalized_inpt[:, :-1]) # scale all features except prev choice and subject id
+    #         # subj_normalized_inpt = np.copy(subj_unnormalized_inpt) # copy the unnormalized data matrix to the normalized one
+    #         # subj_normalized_inpt[:, :-1] = preprocessing.scale(subj_normalized_inpt[:, :-1]) # scale all features except prev choice and subject id
 
-            # # now create or append data to master array across all subjects:
-            # if z == 0:
-            #     master_inpt = np.copy(subj_normalized_inpt)
-            #     subject_start_idx[subject] = 0
-            #     subject_end_idx[subject] = master_inpt.shape[0] - 1
-            #     master_y = np.copy(subj_y)
-            #     # master_session = subj_session
-            #     master_trial_fold_lookup_table = subj_trial_fold_lookup
-            #     # master_correct = np.copy(subj_correct)
-            #     subject_tags_all = np.copy(subject_tags)
-            # else:
-            #     subject_start_idx[subject] = master_inpt.shape[0]
-            #     master_inpt = np.vstack((master_inpt, subj_normalized_inpt))
-            #     subject_end_idx[subject] = master_inpt.shape[0] - 1
-            #     master_y = np.vstack((master_y, subj_y))
-            #     # master_session = np.concatenate((master_session, subj_session))
-            #     master_trial_fold_lookup_table = np.vstack(
-            #         (master_trial_fold_lookup_table, subj_trial_fold_lookup))
-            #     # master_correct = np.vstack((master_correct, subj_correct))
-            #     subject_tags_all = np.concatenate((subject_tags_all, subject_tags))
+    #         # # now create or append data to master array across all subjects:
+    #         # if z == 0:
+    #         #     master_inpt = np.copy(subj_normalized_inpt)
+    #         #     subject_start_idx[subject] = 0
+    #         #     subject_end_idx[subject] = master_inpt.shape[0] - 1
+    #         #     master_y = np.copy(subj_y)
+    #         #     # master_session = subj_session
+    #         #     master_trial_fold_lookup_table = subj_trial_fold_lookup
+    #         #     # master_correct = np.copy(subj_correct)
+    #         #     subject_tags_all = np.copy(subject_tags)
+    #         # else:
+    #         #     subject_start_idx[subject] = master_inpt.shape[0]
+    #         #     master_inpt = np.vstack((master_inpt, subj_normalized_inpt))
+    #         #     subject_end_idx[subject] = master_inpt.shape[0] - 1
+    #         #     master_y = np.vstack((master_y, subj_y))
+    #         #     # master_session = np.concatenate((master_session, subj_session))
+    #         #     master_trial_fold_lookup_table = np.vstack(
+    #         #         (master_trial_fold_lookup_table, subj_trial_fold_lookup))
+    #         #     # master_correct = np.vstack((master_correct, subj_correct))
+    #         #     subject_tags_all = np.concatenate((subject_tags_all, subject_tags))
             
-        # num_subjects = len(final_subject_list)
+    #     # num_subjects = len(final_subject_list)
 
-        ####
-        # write out data from across subjects
-        assert np.shape(master_inpt)[0] == np.shape(master_y)[
-            0], "inpt and y not same length"
-        # assert np.shape(master_correct)[0] == np.shape(master_y)[
-        #     0], "correct and y not same length"
-        assert len(master_inpt) == \
-           np.shape(master_trial_fold_lookup_table)[
-               0], "number of total trials and trial fold lookup don't " \
-                   "match"
-        # assert len(subject_list) == num_subjects, f"{num_subjects} subjects in group 1" # not sure what the point of doing this for us is
+    #     ####
+    #     # write out data from across subjects
+    #     assert np.shape(master_inpt)[0] == np.shape(master_y)[
+    #         0], "inpt and y not same length"
+    #     # assert np.shape(master_correct)[0] == np.shape(master_y)[
+    #     #     0], "correct and y not same length"
+    #     assert len(master_inpt) == \
+    #        np.shape(master_trial_fold_lookup_table)[
+    #            0], "number of total trials and trial fold lookup don't " \
+    #                "match"
+    #     # assert len(subject_list) == num_subjects, f"{num_subjects} subjects in group 1" # not sure what the point of doing this for us is
 
-        # normalization happens here
-        normalized_inpt = np.copy(master_inpt) 
-        # # print(f'size normalized_inpt before scale: {np.shape(normalized_inpt)}')
-        # print(f'means before scaling: {normalized_inpt.mean(axis=0)}, sds before scaling: {normalized_inpt.std(axis=0)}')
-        # normalized_inpt[:, :-1] = preprocessing.scale(normalized_inpt[:, :-1]) # scale all features except prev choice and subject id
-        # # print(f'size normalized_inpt after scale: {np.shape(normalized_inpt)}')
-        # print(f'means after scaling: {normalized_inpt.mean(axis=0)}, sds after scaling: {normalized_inpt.std(axis=0)}')
+    #     # normalization happens here
+    #     normalized_inpt = np.copy(master_inpt) 
+    #     # # print(f'size normalized_inpt before scale: {np.shape(normalized_inpt)}')
+    #     # print(f'means before scaling: {normalized_inpt.mean(axis=0)}, sds before scaling: {normalized_inpt.std(axis=0)}')
+    #     # normalized_inpt[:, :-1] = preprocessing.scale(normalized_inpt[:, :-1]) # scale all features except prev choice and subject id
+    #     # # print(f'size normalized_inpt after scale: {np.shape(normalized_inpt)}')
+    #     # print(f'means after scaling: {normalized_inpt.mean(axis=0)}, sds after scaling: {normalized_inpt.std(axis=0)}')
 
-        # min_max_scaler = preprocessing.MinMaxScaler()
-        # normalized_inpt[:, :-1] = min_max_scaler.fit_transform(normalized_inpt[:, :-1]) # scale all features except prev choice
-        # print(f'means after min max scaling: {normalized_inpt.mean(axis=0)}, sds after min max scaling: {normalized_inpt.std(axis=0)}')
+    #     # min_max_scaler = preprocessing.MinMaxScaler()
+    #     # normalized_inpt[:, :-1] = min_max_scaler.fit_transform(normalized_inpt[:, :-1]) # scale all features except prev choice
+    #     # print(f'means after min max scaling: {normalized_inpt.mean(axis=0)}, sds after min max scaling: {normalized_inpt.std(axis=0)}')
 
-        np.savez(processed_data_path + group_str + '_all_subj_concat.npz',
-            normalized_inpt,
-            master_y)
-        pd.DataFrame(normalized_inpt).to_csv(processed_data_path + group_str + '_all_subj_concat.csv') # also save as csv for readability
-        pd.DataFrame(master_y).to_csv(processed_data_path + group_str + '_all_subj_concat_y.csv') # also save master_y as csv
-        np.savez(
-            processed_data_path + group_str + '_all_subj_concat_unnormalized.npz',
-            master_inpt, master_y)
-        np.savez(
-            processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.npz',
-            master_trial_fold_lookup_table)
-        pd.DataFrame(master_trial_fold_lookup_table).to_csv(processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.csv') # save as csv for readability
-        # np.savez(processed_data_path + group_str + '_all_subj_concat_correct.npz',
-        #     master_correct)
+    #     np.savez(processed_data_path + group_str + '_all_subj_concat.npz',
+    #         normalized_inpt,
+    #         master_y)
+    #     pd.DataFrame(normalized_inpt).to_csv(processed_data_path + group_str + '_all_subj_concat.csv') # also save as csv for readability
+    #     pd.DataFrame(master_y).to_csv(processed_data_path + group_str + '_all_subj_concat_y.csv') # also save master_y as csv
+    #     np.savez(
+    #         processed_data_path + group_str + '_all_subj_concat_unnormalized.npz',
+    #         master_inpt, master_y)
+    #     np.savez(
+    #         processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.npz',
+    #         master_trial_fold_lookup_table)
+    #     pd.DataFrame(master_trial_fold_lookup_table).to_csv(processed_data_path + group_str + '_all_subj_concat_trial_fold_lookup.csv') # save as csv for readability
+    #     # np.savez(processed_data_path + group_str + '_all_subj_concat_correct.npz',
+    #     #     master_correct)
         np.savez(processed_data_path + 'data_by_subj/' + group_str + '_final_subject_list.npz',
             final_subject_list) # ?
-        np.savez(processed_data_path + group_str + '_all_subj_tags.npz', subject_tags_all) # save list of tags for normalized_inpt
-        pd.DataFrame(subject_tags_all).to_csv(processed_data_path + group_str + '_all_subj_tags.csv') # save as csv for readability
+    #     np.savez(processed_data_path + group_str + '_all_subj_tags.npz', subject_tags_all) # save list of tags for normalized_inpt
+    #     pd.DataFrame(subject_tags_all).to_csv(processed_data_path + group_str + '_all_subj_tags.csv') # save as csv for readability
         
         # save the list of variables for labels for plot later
         vars_to_keep.append('prev_resp')
@@ -303,25 +303,25 @@ if __name__ == '__main__':
         with open(processed_data_path + 'labels_for_plot.json', 'w') as f:
             json.dump(vars_to_keep, f)
         
-        # json = json.dumps(final_subject_ids_dict)
-        # f = open(processed_data_path + 'final_subject_ids_dict.json', "w")
-        # f.write(json)
-        # f.close()
+    #     # json = json.dumps(final_subject_ids_dict)
+    #     # f = open(processed_data_path + 'final_subject_ids_dict.json', "w")
+    #     # f.write(json)
+    #     # f.close()
 
-        # Now write out normalized data (when normalized across all subjects) for
-        # each subject:        
-        counter = 0
-        for subject in subject_start_idx.keys():
-            start_idx = subject_start_idx[subject]
-            end_idx = subject_end_idx[subject]
-            inpt = normalized_inpt[range(start_idx, end_idx + 1)]
-            y = master_y[range(start_idx, end_idx + 1)]
-            # session = master_session[range(start_idx, end_idx + 1)]
-            counter += inpt.shape[0]
-            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_processed.npz',
-                inpt, y)
+    #     # Now write out normalized data (when normalized across all subjects) for
+    #     # each subject:        
+    #     counter = 0
+    #     for subject in subject_start_idx.keys():
+    #         start_idx = subject_start_idx[subject]
+    #         end_idx = subject_end_idx[subject]
+    #         inpt = normalized_inpt[range(start_idx, end_idx + 1)]
+    #         y = master_y[range(start_idx, end_idx + 1)]
+    #         # session = master_session[range(start_idx, end_idx + 1)]
+    #         counter += inpt.shape[0]
+    #         np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_processed.npz',
+    #             inpt, y)
 
-        assert counter == master_inpt.shape[0]
+    #     assert counter == master_inpt.shape[0]
 
         reaction_time = data['TrialRT']
         if not os.path.exists('response_times/data_by_subj/'):
