@@ -173,11 +173,11 @@ def get_all_unnormalized_data_this_session(eid):
     return animal, unnormalized_inpt, y, session, num_viols_50, rewarded
 
 
-def load_animal_list(file):
+def load_subject_list(file):
     container = np.load(file, allow_pickle=True)
     data = [container[key] for key in container]
-    animal_list = data[0]
-    return animal_list
+    subject_list = data[0]
+    return subject_list
 
 
 def load_animal_eid_dict(file):
@@ -192,8 +192,8 @@ def load_data(animal_file):
     inpt = data[0]
     y = data[1]
     y = y.astype('int')
-    session = data[2]
-    return inpt, y, session
+    # session = data[2]
+    return inpt, y
 
 
 def create_train_test_sessions(session, num_folds=5):

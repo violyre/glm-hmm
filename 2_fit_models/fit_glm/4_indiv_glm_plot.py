@@ -3,18 +3,16 @@ import autograd.numpy.random as npr
 import os
 import matplotlib.pyplot as plt
 from glm_utils import load_subj_list, append_zeros
-
-all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
-                'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
-                'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
-                'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
-                'prev_resp', 'prev_acc', 'bias']
-labels_for_plot = all_labels # temp
+import json
 
 if __name__ == '__main__':
     data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/data_by_subj/'
     num_folds = 5
     results_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/results/individual_fit/'
+
+    with open(data_dir + 'labels_for_plot.json', 'r') as f:
+        labels_for_plot = json.load(f)
+    print(labels_for_plot)
     
     for group in range(1,4):
         group_str = f'{group:02d}' # which group we are currently looking at 

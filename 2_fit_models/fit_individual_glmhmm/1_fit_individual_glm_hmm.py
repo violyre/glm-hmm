@@ -13,13 +13,13 @@ N_em_iters = 300  # number of EM iterations
 
 prior_sigma = [2]
 transition_alpha = [2]
-K_vals = [3, 4] # [2, 3, 4, 5]
+K_vals = [2, 3] # [2, 3, 4, 5]
 num_folds = 5
 N_initializations = 2
 
 USE_CLUSTER = False
 
-train_test_split = False # change this flag if you want to split train/test here
+train_test_split = True # change this flag if you want to split train/test here
 
 if __name__ == '__main__':
     global_data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/'
@@ -38,7 +38,7 @@ if __name__ == '__main__':
             load_subj_list, load_data, create_violation_mask, \
             launch_glm_hmm_job
 
-    num_folds = 5
+    num_folds = 1 #5
 
     cluster_arr = []
     for K in K_vals:
@@ -65,7 +65,7 @@ if __name__ == '__main__':
             subj_file = data_dir + group_str + '_' + subj + '_processed.npz'
             # session_fold_lookup_table = load_session_fold_lookup(
             #     data_dir + subj + '_session_fold_lookup.npz')
-            trial_fold_lookup_table = load_session_fold_lookup(global_data_dir + group_str + '_all_subj_concat_trial_fold_lookup.npz')
+            trial_fold_lookup_table = load_session_fold_lookup(global_data_dir + 'data_by_subj/' + group_str + '_' + subj + '_trial_fold_lookup.npz')
 
             global_fit = False
 

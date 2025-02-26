@@ -5,14 +5,18 @@ import autograd.numpy as np
 import autograd.numpy.random as npr
 
 
-def load_data(animal_file):
-    container = np.load(animal_file, allow_pickle=True)
+def load_data(subject_file):
+    container = np.load(subject_file, allow_pickle=True)
     data = [container[key] for key in container]
     inpt = data[0]
     y = data[1]
-    session = data[2]
-    return inpt, y, session
+    return inpt, y
 
+def load_tags(tags_file):
+    container = np.load(tags_file, allow_pickle=True)
+    data = [container[key] for key in container]
+    tags = data[0]
+    return tags
 
 def load_cluster_arr(cluster_arr_file):
     container = np.load(cluster_arr_file, allow_pickle=True)
@@ -119,7 +123,8 @@ def launch_glm_hmm_job(inpt, y, session, mask, session_fold_lookup_table, K, D,
                            str(iter) + '.npz')
 
 
-def fit_glm_hmm(datas, inputs, masks, K, D, M, C, N_em_iters,
+def fit_glm_hmm(datas, inputs, masks, tags,
+                K, D, M, C, N_em_iters,
                 transition_alpha, prior_sigma, global_fit,
                 params_for_initialization, save_title): # , lambda_reg=0.01
     '''
@@ -176,6 +181,7 @@ def fit_glm_hmm(datas, inputs, masks, K, D, M, C, N_em_iters,
     lls = this_hmm.fit(datas,
                        inputs=inputs,
                        masks=masks,
+                       tags=tags,
                        method="em",
                        num_iters=N_em_iters,
                        initialize=False,

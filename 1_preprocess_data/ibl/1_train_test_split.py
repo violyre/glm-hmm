@@ -33,6 +33,7 @@ if __name__ == '__main__':
         for z, subject in enumerate(subject_list):
             subj_unnormalized_inpt, subj_y = load_data(processed_data_path + f'data_by_subj/{group_str}_{subject}_unnormalized.npz')
             subj_trial_fold_lookup = split_train_test(subj_unnormalized_inpt, split_ratio=0.7)
+            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_trial_fold_lookup.npz', subj_trial_fold_lookup)
 
             # Get train/test indices
             train_indices = subj_trial_fold_lookup[subj_trial_fold_lookup[:, 1] == 'train', 0].astype(int)
@@ -47,6 +48,9 @@ if __name__ == '__main__':
             # Reconstruct full normalized input
             subj_normalized_inpt = np.copy(subj_unnormalized_inpt)
             subj_normalized_inpt[:, :-1] = subj_features
+
+            np.savez(processed_data_path + 'data_by_subj/' + group_str + '_' + subject + '_processed.npz',
+                subj_normalized_inpt, subj_y)
 
             # Append to master dataset
             subject_tags = np.full(len(subj_unnormalized_inpt), subject)

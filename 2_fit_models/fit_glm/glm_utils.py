@@ -7,22 +7,26 @@ from scipy.stats import chi2 # my addition
 npr.seed(65)
 
 
-def load_data(animal_file):
-    container = np.load(animal_file, allow_pickle=True)
+def load_data(subject_file):
+    container = np.load(subject_file, allow_pickle=True)
     data = [container[key] for key in container]
     inpt = data[0]
     y = data[1]
-    session = data[2]
-    return inpt, y, session
+    return inpt, y
 
+def load_tags(tags_file):
+    container = np.load(tags_file, allow_pickle=True)
+    data = [container[key] for key in container]
+    tags = data[0]
+    return tags
 
-def fit_glm(inputs, datas, M, C):
+def fit_glm(inputs, datas, tags, M, C):
     new_glm = glm(M, C)
-    new_glm.fit_glm(datas, inputs, masks=None, tags=None)
+    new_glm.fit_glm(datas, inputs, masks=None, tags=tags)
     # print(f'Wk: {new_glm.Wk}') # my addition
     # print(f'params: {new_glm.params}') # my addition
     # Get loglikelihood of training data:
-    loglikelihood_train = new_glm.log_marginal(datas, inputs, None, None)
+    loglikelihood_train = new_glm.log_marginal(datas, inputs, None, tags)
     # deviance = -2 * loglikelihood_train # my addition
     # print(f'deviance: {deviance}')
     recovered_weights = new_glm.Wk
@@ -123,7 +127,7 @@ def plot_input_vectors(Ws,
              fontsize=15)
     fig.suptitle("GLM Weights: " + title, y=0.99, fontsize=14)
     fig.savefig(figure_directory + 'glm_weights_' + save_title + '.png')
-
+    
     # fig.show() # my addition
 
 # plot log-likelihood comparisons between removing features and original

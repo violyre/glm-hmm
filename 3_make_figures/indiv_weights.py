@@ -16,7 +16,7 @@ with open(data_dir + 'labels_for_plot.json', 'r') as f:
 print(labels_for_plot)
 
 if __name__ == '__main__':
-    K = 3
+    K = 2
     # D, M, C = 1, 3, 2
 
     for group in range(1,4):

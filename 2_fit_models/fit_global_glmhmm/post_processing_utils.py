@@ -14,14 +14,13 @@ from GLM import glm
 # from LapseModel import lapse_model
 
 
-def load_data(animal_file):
-    container = np.load(animal_file, allow_pickle=True)
+def load_data(subject_file):
+    container = np.load(subject_file, allow_pickle=True)
     data = [container[key] for key in container]
     inpt = data[0]
     y = data[1]
     y = y.astype('int')
-    session = data[2]
-    return inpt, y, session
+    return inpt, y
 
 
 def load_session_fold_lookup(file_path):

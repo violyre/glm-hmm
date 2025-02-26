@@ -10,45 +10,32 @@ from post_processing_utils import load_data, load_session_fold_lookup, \
 from post_processing_utils import create_violation_mask, \
     update_features # my addition
 
-all_labels = ['stim_probe X', 'stim_probe Y', 'stim_probe dist', 'stim_probe angle',
-                'stim_1 X', 'stim_1 Y', 'stim_1 dist', 'stim_1 angle',
-                'stim_2 X', 'stim_2 Y', 'stim_2 dist', 'stim_2 angle',
-                'stim_3 X', 'stim_3 Y', 'stim_3 dist', 'stim_3 angle',
-                'prev_resp', 'prev_acc', 'bias']
-
-doing_feature_selection = True # change this flag if you are using this code to do feature selection or not
-train_test_split = True # change this flag if you want to split train/test here
-
-# for manual feature selection
-features_to_remove = ['stim_probe X', 'stim_probe Y', 'stim_1 X', 'stim_1 Y', 
-                      'stim_2 X', 'stim_2 Y', 'stim_3 X', 'stim_3 Y']  # Update this list with features you want to remove
-
-# Update features and labels based on removal
-feat_idxs_to_keep = update_features(features_to_remove, all_labels)
-labels_for_plot = [all_labels[i] for i in feat_idxs_to_keep]
-print(labels_for_plot)
-if 'bias' not in features_to_remove:
-    feat_idxs_to_keep = feat_idxs_to_keep[:-1] # remove last term so it doesn't cause an issue with input
+doing_feature_selection = False # change this flag if you are using this code to do feature selection or not
+train_test_split = False # change this flag if you want to split train/test here
 
 if __name__ == '__main__':
     data_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/data_for_cluster/'
     results_dir = 'C:/Users/violy/Documents/~PhD/Lab/SC/TCP_data/results/global_fit/'
+
+    with open(data_dir + 'labels_for_plot.json', 'r') as f:
+        labels_for_plot = json.load(f)
+    print(labels_for_plot)
 
     for group in range(1,4):
         group_str = f'{group:02d}'
         print(f"For group {group}:")
 
         # Load data
-        # input, y = load_data(data_dir + 'all_subj_concat.npz')
-        container = np.load(data_dir + group_str + '_all_subj_concat.npz', allow_pickle=True)
-        data = [container[key] for key in container]
-        inpt = data[0]
-        y = data[1]
-        y = y.astype('int')
+        inpt, y = load_data(data_dir + 'all_subj_concat.npz')
+        # container = np.load(data_dir + group_str + '_all_subj_concat.npz', allow_pickle=True)
+        # data = [container[key] for key in container]
+        # inpt = data[0]
+        # y = data[1]
+        # y = y.astype('int')
 
-        # remove features if needed
-        inpt = inpt[:, feat_idxs_to_keep]
-        print(np.shape(inpt))
+        # # remove features if needed
+        # inpt = inpt[:, feat_idxs_to_keep]
+        # print(np.shape(inpt))
 
         # Parameters
         C = 2  # number of output classes
